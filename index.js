@@ -181,7 +181,6 @@ function serveSignUp (request, response) {
     runSeries([
       done => {
         storage.account.exists(handle, (error, exists) => {
-          /* istanbul ignore if */
           if (error) return done(error)
           if (exists) {
             const error = new Error('handle taken')
@@ -193,7 +192,6 @@ function serveSignUp (request, response) {
       },
       done => {
         storage.email.read(email, (error, handle) => {
-          /* istanbul ignore if */
           if (error) return done(error)
           if (!handle) return done()
           const hasAccount = new Error('e-mail address has an account')
@@ -205,7 +203,6 @@ function serveSignUp (request, response) {
       },
       done => {
         hashPassword(password, (error, passwordHash) => {
-          /* istanbul ignore if */
           if (error) return done(error)
           runSeries([
             done => {
@@ -223,7 +220,6 @@ function serveSignUp (request, response) {
               storage.email.write(email, handle, done)
             }
           ], error => {
-            /* istanbul ignore if */
             if (error) return done(error)
             request.log.info('recorded account')
             done()
@@ -238,7 +234,6 @@ function serveSignUp (request, response) {
           handle,
           email
         }, error => {
-          /* istanbul ignore if */
           if (error) return done(error)
           request.log.info('recorded token')
           notify.confirmAccount({
@@ -246,7 +241,6 @@ function serveSignUp (request, response) {
             handle,
             url: `${process.env.BASE_HREF}/confirm?token=${token}`
           }, error => {
-            /* istanbul ignore if */
             if (error) return done(error)
             request.log.info('e-mailed token')
             done()
@@ -260,7 +254,6 @@ function serveSignUp (request, response) {
           subject: 'Sign Up',
           text: `Handle: ${handle}\nE-Mail: ${email}\n`
         }, error => {
-          /* istanbul ignore if */
           if (error) request.log.error(error)
           done()
         })
@@ -399,7 +392,6 @@ function serveSignIn (request, response) {
       authenticate,
       createSession
     ], error => {
-      /* istanbul ignore if */
       if (error) return done(error)
       done(null, sessionID)
     })
@@ -408,7 +400,6 @@ function serveSignIn (request, response) {
       verifyPassword(handle, password, (verifyError, account) => {
         if (verifyError) {
           const statusCode = verifyError.statusCode
-          /* istanbul ignore if */
           if (statusCode === 500) return done(verifyError)
           if (!account) return done(verifyError)
           request.log.info(verifyError, 'authentication error')
@@ -418,7 +409,6 @@ function serveSignIn (request, response) {
               locked: new Date().toISOString(),
               failures: 0
             }, recordError => {
-              /* istanbul ignore if */
               if (recordError) return done(recordError)
               done(verifyError)
             })
@@ -426,7 +416,6 @@ function serveSignIn (request, response) {
           return storage.account.update(
             handle, { failures },
             (updateError) => {
-              /* istanbul ignore if */
               if (updateError) return done(updateError)
               done(verifyError)
             }
@@ -444,9 +433,7 @@ function serveSignIn (request, response) {
         handle,
         created: new Date().toISOString()
       }, (error, success) => {
-        /* istanbul ignore if */
         if (error) return done(error)
-        /* istanbul ignore if */
         if (!success) return done(new Error('session collision'))
         request.log.info({ id: sessionID }, 'recorded session')
         done()
@@ -492,7 +479,6 @@ function serveSignOut (request, response) {
       token: body.csrftoken,
       nonce: body.csrfnonce
     }, error => {
-      /* istanbul ignore if */
       if (error) return redirect()
       clearCookie(response)
       redirect()
@@ -619,7 +605,6 @@ function serveHandle (request, response) {
   function processBody (request, body, done) {
     const email = body.email
     storage.email.read(email, (error, handle) => {
-      /* istanbul ignore if */
       if (error) return done(error)
       if (!handle) return done()
       notify.handleReminder({
@@ -698,7 +683,6 @@ function serveEMail (request, response) {
     const handle = request.account.handle
     const email = body.email
     storage.email.read(email, (error, existingHandle) => {
-      /* istanbul ignore if */
       if (error) return done(error)
       if (existingHandle) {
         const error = new Error('e-mail already has an account')
@@ -713,7 +697,6 @@ function serveEMail (request, response) {
         handle,
         email
       }, error => {
-        /* istanbul ignore if */
         if (error) return done(error)
         request.log.info({ token }, 'e-mail change token')
         notify.confirmEMailChange({
@@ -788,7 +771,6 @@ function getWithToken (request, response) {
     return invalidToken(request, response)
   }
   storage.token.read(token, (error, tokenData) => {
-    /* istanbul ignore if */
     if (error) return serve500(request, response, error)
     if (!tokenData) return invalidToken(request, response)
     if (tokenData.action !== 'reset') {
@@ -869,7 +851,6 @@ function postPassword (request, response) {
     changePassword,
     sendEMail
   ], function (error) {
-    /* istanbul ignore if */
     if (error) {
       if (error.statusCode === 400) {
         response.statusCode = 400
@@ -973,7 +954,6 @@ function postPassword (request, response) {
     const token = body.token
     if (token) {
       return storage.token.read(token, (error, tokenData) => {
-        /* istanbul ignore if */
         if (error) return done(error)
         if (!tokenData || tokenData.action !== 'reset') {
           const failed = new Error('invalid token')
@@ -981,7 +961,6 @@ function postPassword (request, response) {
           return done(failed)
         }
         storage.token.use(token, error => {
-          /* istanbul ignore if */
           if (error) return done(error)
           handle = tokenData.handle
           recordChange()
@@ -993,7 +972,6 @@ function postPassword (request, response) {
 
     function recordChange () {
       hashPassword(body.password, (error, passwordHash) => {
-        /* istanbul ignore if */
         if (error) return done(error)
         storage.account.update(handle, { passwordHash }, done)
       })
@@ -1002,14 +980,12 @@ function postPassword (request, response) {
 
   function sendEMail (done) {
     storage.account.read(handle, (error, account) => {
-      /* istanbul ignore if */
       if (error) return done(error)
       notify.passwordChanged({
         to: account.email,
         handle
       }, error => {
         // Log and eat errors.
-        /* istanbul ignore if */
         if (error) request.log.error(error)
         done()
       })
@@ -1071,7 +1047,6 @@ function serveReset (request, response) {
   function processBody (request, body, done) {
     const handle = body.handle
     storage.account.read(handle, (error, account) => {
-      /* istanbul ignore if */
       if (error) return done(error)
       if (!account) {
         const invalid = new Error('invalid handle')
@@ -1084,7 +1059,6 @@ function serveReset (request, response) {
         created: new Date().toISOString(),
         handle
       }, error => {
-        /* istanbul ignore if */
         if (error) return done(error)
         const url = `${process.env.BASE_HREF}/password?token=${token}`
         notify.passwordReset({
@@ -1128,11 +1102,9 @@ function serveConfirm (request, response) {
   }
 
   storage.token.read(token, (error, tokenData) => {
-    /* istanbul ignore if */
     if (error) return serve500(request, response, error)
     if (!tokenData) return invalidToken(request, response)
     storage.token.use(token, error => {
-      /* istanbul ignore if */
       if (error) return serve500(request, response, error)
       const action = tokenData.action
       if (action !== 'confirm' && action !== 'email') {
@@ -1142,7 +1114,6 @@ function serveConfirm (request, response) {
       const handle = tokenData.handle
       if (action === 'confirm') {
         storage.account.confirm(handle, error => {
-          /* istanbul ignore if */
           if (error) return serve500(request, response, error)
           serve303(request, response, '/signin')
         })
@@ -1153,7 +1124,6 @@ function serveConfirm (request, response) {
         runSeries([
           done => {
             storage.account.read(handle, (error, account) => {
-              /* istanbul ignore if */
               if (error) return done(error)
               oldEMail = account.email
               done()
@@ -1163,7 +1133,6 @@ function serveConfirm (request, response) {
           done => storage.email.delete(oldEMail, done),
           done => storage.email.write(email, handle, done)
         ], error => {
-          /* istanbul ignore if */
           if (error) return serve500(request, response, error)
           response.setHeader('Content-Type', 'text/html')
           response.end(html`
@@ -1324,7 +1293,6 @@ function formRoute ({
     })
     if (loadGETData) {
       return loadGETData(request, data, error => {
-        /* istanbul ignore if */
         if (error) return serve500(request, response, error)
         response.end(form(request, data))
       })
@@ -1403,7 +1371,6 @@ function formRoute ({
 
     function process (done) {
       processBody(request, body, (error, result) => {
-        /* istanbul ignore if */
         if (error) return done(error)
         fromProcess = result
         done()
