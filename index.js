@@ -359,7 +359,7 @@ function serveSignIn (request, response) {
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Log In</h2>
+        <h2>Sign In</h2>
         <form id=signinForm method=post>
           ${data.error}
           ${data.csrf}
@@ -373,7 +373,7 @@ function serveSignIn (request, response) {
             <input name=password type=password required>
           </p>
           ${data.password.error}
-          <button type=submit>Log In</button>
+          <button type=submit>Sign In</button>
         </form>
         <a href=/handle>Forgot Handle</a>
         <a href=/reset>Reset Password</a>

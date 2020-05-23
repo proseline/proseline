@@ -1,8 +1,8 @@
-const ANA = require('./ana')
-const BOB = require('./bob')
 const http = require('http')
 const server = require('./server')
+const signup = require('./signup')
 const tape = require('tape')
+const verifySignIn = require('./verify-signin')
 const webdriver = require('./webdriver')
 
 const path = '/signin'
@@ -30,7 +30,7 @@ tape('browse ' + path, test => {
       .then(() => browser.$('h2'))
       .then(title => title.getText())
       .then(text => {
-        test.equal(text, 'Log In', '<h2>Log In</h2>')
+        test.equal(text, 'Sign In', '<h2>Sign In</h2>')
         test.end()
         done()
       })
@@ -42,26 +42,35 @@ tape('browse ' + path, test => {
   })
 })
 
-tape('log in as Ana', test => {
+tape('sign in', test => {
+  const handle = 'ana'
+  const password = 'test password'
+  const email = 'ana@example.com'
   server((port, done) => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
+      .then(() => new Promise((resolve, reject) => {
+        signup({
+          browser, port, handle, password, email
+        }, error => {
+          if (error) return reject(error)
+          resolve()
+        })
+      }))
       .then(() => browser.navigateTo('http://localhost:' + port))
       .then(() => browser.$('#signin'))
       .then(a => a.click())
       .then(() => browser.$('#signinForm input[name="handle"]'))
-      .then(input => input.addValue(ANA.handle))
+      .then(input => input.addValue(handle))
       .then(() => browser.$('#signinForm input[name="password"]'))
-      .then(input => input.addValue(ANA.password))
+      .then(input => input.addValue(password))
       .then(() => browser.$('#signinForm button[type="submit"]'))
       .then(submit => submit.click())
-      .then(() => browser.$('p.welcome'))
-      .then(p => p.getText())
-      .then(text => {
-        test.assert(text.includes(ANA.handle), 'welcome')
-        finish()
-      })
+      .then(() => verifySignIn({
+        browser, port, test, handle, email
+      }))
+      .then(() => { finish() })
       .catch(error => {
         test.fail(error)
         finish()
@@ -73,38 +82,7 @@ tape('log in as Ana', test => {
   })
 })
 
-tape('log in as Bob', test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#signin'))
-      .then(a => a.click())
-      .then(() => browser.$('#signinForm input[name="handle"]'))
-      .then(input => input.addValue(BOB.handle))
-      .then(() => browser.$('#signinForm input[name="password"]'))
-      .then(input => input.addValue(BOB.password))
-      .then(() => browser.$('#signinForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('p.welcome'))
-      .then(p => p.getText())
-      .then(text => {
-        test.assert(text.includes(BOB.handle), 'welcome')
-        finish()
-      })
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
-})
-
-tape('log in with bad credentials', test => {
+tape('sign in with bad credentials', test => {
   server((port, done) => {
     let browser
     webdriver()
@@ -135,7 +113,7 @@ tape('log in with bad credentials', test => {
   })
 })
 
-tape('log in with bad password', test => {
+tape('sign in with bad password', test => {
   server((port, done) => {
     let browser
     webdriver()
@@ -144,7 +122,7 @@ tape('log in with bad password', test => {
       .then(() => browser.$('#signin'))
       .then(a => a.click())
       .then(() => browser.$('#signinForm input[name="handle"]'))
-      .then(input => input.addValue(ANA.handle))
+      .then(input => input.addValue('invalid'))
       .then(() => browser.$('#signinForm input[name="password"]'))
       .then(input => input.addValue('invalid'))
       .then(() => browser.$('#signinForm button[type="submit"]'))
@@ -167,16 +145,27 @@ tape('log in with bad password', test => {
 })
 
 tape('lockout', test => {
+  const handle = 'ana'
+  const password = 'test password'
+  const email = 'ana@example.com'
   server((port, done) => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
+      .then(() => new Promise((resolve, reject) => {
+        signup({
+          browser, port, handle, password, email
+        }, error => {
+          if (error) return reject(error)
+          resolve()
+        })
+      }))
       .then(() => signInWithPassword('invalid', 'invalid handle or password'))
       .then(() => signInWithPassword('invalid', 'invalid handle or password'))
       .then(() => signInWithPassword('invalid', 'invalid handle or password'))
       .then(() => signInWithPassword('invalid', 'invalid handle or password'))
       .then(() => signInWithPassword('invalid', 'invalid handle or password'))
-      .then(() => signInWithPassword(ANA.password, 'account locked'))
+      .then(() => signInWithPassword(password, 'account locked'))
       .then(finish)
       .catch(error => {
         test.fail(error)
@@ -188,7 +177,7 @@ tape('lockout', test => {
         .then(() => browser.$('#signin'))
         .then(a => a.click())
         .then(() => browser.$('#signinForm input[name="handle"]'))
-        .then(input => input.addValue(ANA.handle))
+        .then(input => input.addValue(handle))
         .then(() => browser.$('#signinForm input[name="password"]'))
         .then(input => input.addValue(password))
         .then(() => browser.$('#signinForm button[type="submit"]'))
