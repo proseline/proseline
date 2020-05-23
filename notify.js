@@ -40,6 +40,14 @@ The password for your Proseline account on was changed.
   }, callback)
 }
 
+exports.handleReminder = ({ to, handle }, callback) => {
+  send({
+    to,
+    subject: 'Your Proseline Handle',
+    markup: `Your handle on Proseline is "${handle}".`
+  }, callback)
+}
+
 exports.confirmEMailChange = ({ to, url }, callback) => {
   send({
     to,

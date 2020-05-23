@@ -1,7 +1,7 @@
-const ANA = require('./ana')
 const http = require('http')
-const signin = require('./signin')
 const server = require('./server')
+const signin = require('./signin')
+const signup = require('./signup')
 const tape = require('tape')
 const verifySignIn = require('./verify-signin')
 const webdriver = require('./webdriver')
@@ -22,17 +22,23 @@ tape('GET ' + path, test => {
 })
 
 tape('browse ' + path, test => {
-  const email = ANA.email
-  const handle = ANA.handle
-  const password = ANA.password
+  const handle = 'ana'
+  const password = 'ana password'
+  const email = 'ana@example.com'
   server((port, done) => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
+      .then(() => {
+        return new Promise((resolve, reject) => signup({
+          browser, port, handle, password, email
+        }, error => {
+          if (error) reject(error)
+          resolve()
+        }))
+      })
       .then(() => signin({ browser, port, handle, password }))
-      .then(() => verifySignIn({
-        browser, test, port, email, handle
-      }))
+      .then(() => verifySignIn({ browser, test, port, email, handle }))
       .then(() => finish())
       .catch(error => {
         test.fail(error, 'catch')

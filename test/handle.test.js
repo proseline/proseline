@@ -1,13 +1,15 @@
-const ANA = require('./ana')
 const http = require('http')
 const mail = require('../mail').events
 const server = require('./server')
+const signup = require('./signup')
 const tape = require('tape')
 const webdriver = require('./webdriver')
 
 const path = '/handle'
-const handle = ANA.handle
-const email = ANA.email
+
+const handle = 'ana'
+const password = 'ana password'
+const email = 'ana@example.com'
 
 tape('GET ' + path, test => {
   server((port, done) => {
@@ -26,6 +28,19 @@ tape('discover handle', test => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
+      .then(() => {
+        return new Promise((resolve, reject) => signup({
+          browser, port, handle, password, email
+        }, error => {
+          if (error) reject(error)
+          mail.once('sent', options => {
+            test.equal(options.to, email, 'sent mail')
+            test.assert(options.text.includes(handle), 'mailed handle')
+            finish()
+          })
+          resolve()
+        }))
+      })
       .then(() => browser.navigateTo('http://localhost:' + port))
       .then(() => browser.$('#signin'))
       .then(a => a.click())
@@ -39,11 +54,6 @@ tape('discover handle', test => {
         test.fail(error, 'catch')
         finish()
       })
-    mail.once('sent', options => {
-      test.equal(options.to, email, 'sent mail')
-      test.assert(options.text.includes(handle), 'mailed handle')
-      finish()
-    })
     function finish () {
       test.end()
       done()

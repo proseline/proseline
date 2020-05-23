@@ -29,6 +29,7 @@ module.exports = (request, response) => {
     if (pathname === '/signin') return serveSignIn(request, response)
     if (pathname === '/signout') return serveSignOut(request, response)
     if (pathname === '/account') return serveAccount(request, response)
+    if (pathname === '/handle') return serveHandle(request, response)
     if (pathname === '/email') return serveEMail(request, response)
     if (pathname === '/password') return servePassword(request, response)
     if (pathname === '/reset') return serveReset(request, response)
@@ -528,6 +529,90 @@ function serveAccount (request, response) {
   </body>
 </html>
   `)
+}
+
+function serveHandle (request, response) {
+  const fields = {
+    email: {
+      filter: (e) => e.toLowerCase().trim(),
+      validate: (e) => EMAIL_RE.test(e)
+    }
+  }
+
+  formRoute({
+    action: '/handle',
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function form (request, data) {
+    return html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Forgot Handle / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Forgot Handle</h2>
+      <form id=handleForm method=post>
+        ${data.error}
+        ${data.csrf}
+        <p>
+          <label for=email>E-Mail</label>
+          <input
+              name=email
+              type=email
+              required
+              autofocus
+              autocomplete=off>
+        </p>
+        ${data.email.error}
+        <button type=submit>Send Handle</button>
+      </form>
+    </main>
+  </body>
+</html>
+    `
+  }
+
+  function onSuccess (request, response, body) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Forgot Handle / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Forgot Handle</h2>
+      <p class=message>If the e-mail you entered corresponds to an account, an e-mail was just sent to it.</p>
+    </main>
+  </body>
+</html>
+    `)
+  }
+
+  function processBody (request, body, done) {
+    const email = body.email
+    storage.email.read(email, (error, handle) => {
+      if (error) return done(error)
+      if (!handle) return done()
+      notify.handleReminder({
+        to: email,
+        handle
+      }, done)
+    })
+  }
 }
 
 function serveEMail (request, response) {

@@ -1,9 +1,8 @@
-const ANA = require('./ana')
-const BOB = require('./bob')
 const http = require('http')
+const server = require('./server')
 const signin = require('./signin')
 const signout = require('./signout')
-const server = require('./server')
+const signup = require('./signup')
 const tape = require('tape')
 const verifySignIn = require('./verify-signin')
 const webdriver = require('./webdriver')
@@ -23,29 +22,29 @@ tape('GET ' + path, test => {
 })
 
 tape('log out', test => {
+  const handle = 'ana'
+  const password = 'test password'
+  const email = 'ana@example.com'
   server((port, done) => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
-      .then(() => signin({
-        browser,
-        port,
-        handle: ANA.handle,
-        password: ANA.password
+      .then(() => new Promise((resolve, reject) => {
+        signup({
+          browser, port, handle, password, email
+        }, error => {
+          if (error) return reject(error)
+          resolve()
+        })
       }))
-      .then(() => verifySignIn({
-        browser,
-        port,
-        test,
-        handle: ANA.handle,
-        email: ANA.email
-      }))
+      .then(() => signin({ browser, port, handle, password }))
+      .then(() => verifySignIn({ browser, port, test, handle, email }))
       .then(() => browser.$('#signout'))
       .then(element => element.click())
-      .then(() => browser.navigateTo('http://localhost:' + port + '/edit'))
-      .then(() => browser.$('h2'))
+      .then(() => browser.navigateTo('http://localhost:' + port))
+      .then(() => browser.$('#signin'))
       .then(h2 => h2.getText())
-      .then(text => test.equal(text, 'Log In', 'Log In'))
+      .then(text => test.equal(text, 'Sign In', 'Sign In'))
       .then(finish)
       .catch(error => {
         test.fail(error)
@@ -59,36 +58,56 @@ tape('log out', test => {
 })
 
 tape('log in as ana, log in as bob', test => {
+  const ana = {
+    handle: 'ana',
+    password: 'ana password',
+    email: 'ana@example.com'
+  }
+  const bob = {
+    handle: 'bob',
+    password: 'bob password',
+    email: 'bob@example.com'
+  }
   server((port, done) => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
+      .then(() => new Promise((resolve, reject) => {
+        signup({
+          browser,
+          port,
+          handle: ana.handle,
+          password: ana.password,
+          email: ana.email
+        }, error => {
+          if (error) return reject(error)
+          resolve()
+        })
+      }))
+      .then(() => new Promise((resolve, reject) => {
+        signup({
+          browser,
+          port,
+          handle: bob.handle,
+          password: bob.password,
+          email: bob.email
+        }, error => {
+          if (error) return reject(error)
+          resolve()
+        })
+      }))
       .then(() => signin({
-        browser,
-        port,
-        handle: ANA.handle,
-        password: ANA.password
+        browser, port, handle: ana.handle, password: ana.password
       }))
       .then(() => verifySignIn({
-        browser,
-        port,
-        test,
-        handle: ANA.handle,
-        email: ANA.email
+        browser, port, test, handle: ana.handle, email: ana.email
       }))
       .then(() => signout({ browser, port }))
       .then(() => signin({
-        browser,
-        port,
-        handle: BOB.handle,
-        password: BOB.password
+        browser, port, handle: bob.handle, password: bob.password
       }))
       .then(() => verifySignIn({
-        browser,
-        port,
-        test,
-        handle: BOB.handle,
-        email: BOB.email
+        browser, port, test, handle: bob.handle, email: bob.email
       }))
       .then(finish)
       .catch(error => {
