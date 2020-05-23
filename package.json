@@ -9,11 +9,17 @@
   },
   "devDependencies": {
     "depcheck": "^0.9.2",
+    "husky": "^4.2.5",
     "licensee": "^8.1.0",
     "nyc": "^15.0.1",
     "simple-concat": "^1.0.0",
     "standard": "^14.3.3",
     "tape": "^5.0.0"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint && npm run coverage && npm run licenses && npm run deps"
+    }
   },
   "scripts": {
     "coverage": "nyc npm run test",
