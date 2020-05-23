@@ -1,8 +1,17 @@
-const basicAuth = require('basic-auth')
+const Busboy = require('busboy')
+const cookie = require('cookie')
+const csrf = require('./csrf')
 const doNotCache = require('do-not-cache')
+const escapeHTML = require('escape-html')
 const fs = require('fs')
+const hashPassword = require('./hash-password')
+const mail = require('./mail')
+const notify = require('./notify')
 const parseURL = require('url-parse')
 const path = require('path')
+const runSeries = require('run-series')
+const uuid = require('uuid')
+const verifyPassword = require('./verify-password')
 
 const inProduction = process.env.NODE_ENV === 'production'
 
@@ -12,6 +21,11 @@ module.exports = (request, response) => {
   if (pathname === '/') return serveIndex(request, response)
   if (pathname === '/styles.css') return serveStyles(request, response)
   if (pathname === '/client.js') return serveClient(request, response)
+  if (pathname === '/signup') return serveSignUp(request, response)
+  if (pathname === '/signin') return serveSignIn(request, response)
+  if (pathname === '/signout') return serveSignOut(request, response)
+  if (pathname === '/password') return servePassword(request, response)
+  if (pathname === '/reset') return serveReset(request, response)
   if (pathname === '/internal-error' && !inProduction) {
     const testError = new Error('test error')
     return serve500(request, response, testError)
@@ -27,18 +41,12 @@ const meta = `
 <link href=/styles.css rel=stylesheet>
 `.trim()
 
+const header = '<header role=banner><h1>Proseline</h1></header>'
+
 // Routes
 
 function serveIndex (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
-  const auth = basicAuth(request)
-  const username = process.env.USERNAME || 'proseline'
-  const password = process.env.PASSWORD || 'proseline'
-  if (!auth || auth.name !== username || auth.pass !== password) {
-    response.statusCode = 401
-    response.setHeader('WWW-Authenticate', 'Basic realm="Proseline"')
-    return response.end()
-  }
   doNotCache(response)
   response.setHeader('Content-Type', 'text/html')
   response.end(`
@@ -49,7 +57,7 @@ function serveIndex (request, response) {
     <title>Proseline</title>
   </head>
   <body>
-    <main>
+    <main role=main>
     </main>
   </body>
 </html>
@@ -66,6 +74,952 @@ function serveClient (request, response) {
   const file = path.join(__dirname, 'client.js')
   response.setHeader('Content-Type', 'text/javascript')
   fs.createReadStream(file).pipe(response)
+}
+
+// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
+
+const UUID_RE = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/
+
+const handles = (() => {
+  const pattern = '^[a-z0-9]{3,16}$'
+  const re = new RegExp(pattern)
+  return {
+    pattern,
+    valid: (string) => re.test(string),
+    html: 'Handles must be ' +
+      'made of the characters ‘a’ through ‘z’ ' +
+      'and the digits ‘0’ through ‘9’. ' +
+      'They must be at least three characters long, ' +
+      'but no more than sixteen.'
+  }
+})()
+
+const passwords = (() => {
+  const min = 8
+  const max = 64
+  const pattern = exports.pattern = `^.{${min},${max}}$`
+  const re = new RegExp(pattern)
+  return {
+    pattern,
+    valid: (string) => {
+      if (!re.test(string)) return false
+      const length = string.length
+      return length >= min && length <= max
+    },
+    html: 'Passwords must be ' +
+      `at least ${min} characters, ` +
+      `and no more than ${max}.`
+  }
+})()
+
+function serveSignUp (request, response) {
+  const fields = {
+    email: {
+      filter: e => e.toLowerCase().trim(),
+      validate: e => EMAIL_RE.test(e)
+    },
+    handle: {
+      filter: e => e.toLowerCase().trim(),
+      validate: handles.valid
+    },
+    password: {
+      validate: passwords.valid
+    },
+    repeat: {
+      validate: (value, body) => value === body.password
+    }
+  }
+
+  formRoute({
+    action: '/signup',
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function processBody (request, body, done) {
+    const { handle, email, password } = body
+    runSeries([
+      done => {
+        hashPassword(password, (error, passwordHash) => {
+          if (error) return done(error)
+          request.record({
+            type: 'account',
+            handle,
+            email,
+            created: new Date().toISOString(),
+            passwordHash
+          }, error => {
+            if (error) return done(error)
+            request.log.info('recorded account')
+            done()
+          })
+        })
+      },
+      done => {
+        const token = uuid.v4()
+        request.record({
+          type: 'confirmAccountToken',
+          token,
+          created: new Date().toISOString(),
+          handle
+        }, error => {
+          if (error) return done(error)
+          request.log.info('recorded token')
+          notify.confirmAccount({
+            to: email,
+            handle,
+            url: `${process.env.BASE_HREF}/confirm?token=${token}`
+          }, error => {
+            if (error) return done(error)
+            request.log.info('e-mailed token')
+            done()
+          })
+        })
+      },
+      done => {
+        if (!process.env.ADMIN_EMAIL) return done()
+        mail({
+          to: process.env.ADMIN_EMAIL,
+          subject: 'Sign Up',
+          text: `Handle: ${handle}\nE-Mail: ${email}\n`
+        }, error => {
+          if (error) request.log.error(error)
+          done()
+        })
+      }
+    ], done)
+  }
+
+  function onSuccess (request, response) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Sign Up / Proseline</title>
+  </head>
+  <body>
+    <header role=banner>
+      <h1>Proseline</h1>
+    </header>
+    <main role=main>
+      <h2>Success</h2>
+      <p class=message>Check your e-mail for a link to confirm your new account.</p>
+    </main>
+  </body>
+</html>
+  `)
+  }
+
+  function form (request, data) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(`
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Sign Up / Proseline</title>
+    </head>
+    <body>
+      <header role=banner>
+        <h1>Proseline</h1>
+      </header>
+      <main role=main>
+        <form id=signupForm method=post>
+          ${data.error}
+          ${data.csrf}
+          ${eMailInput({
+            autofocus: true,
+            value: data.email.value
+          })}
+          ${data.email.error}
+          <p>
+            <label for=handle>Handle</label>
+            <input
+                name=handle
+                type=text
+                pattern="${handles.pattern}"
+                value="${escape(data.handle.value)}"
+                autofocus
+                required>
+          </p>
+          ${data.handle.error}
+          <p>${handles.html}</p>
+          ${passwordInput()}
+          ${data.password.error}
+          ${passwordRepeatInput()}
+          ${data.repeat.error}
+          <button type=submit>Join</button>
+        </form>
+      </main>
+    </body>
+  </html>
+    `.trim())
+  }
+}
+
+function serveSignIn (request, response) {
+  const fields = {
+    handle: {
+      filter: (e) => e.toLowerCase().trim(),
+      validate: x => x.length !== 0
+    },
+    password: {
+      validate: x => x.length !== 0
+    }
+  }
+
+  module.exports = formRoute({
+    action: '/signin',
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function form (request, data) {
+    return `
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Sign In / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      <main role=main>
+        <h2>Log In</h2>
+        <form id=signinForm method=post>
+          ${data.error}
+          ${data.csrf}
+          <p>
+            <label for=handle>Handle</label>
+            <input name=handle type=text required autofocus>
+          </p>
+          ${data.handle.error}
+          <p>
+            <label for=password>Password</label>
+            <input name=password type=password required>
+          </p>
+          ${data.password.error}
+          <button type=submit>Log In</button>
+        </form>
+        <a href=/handle>Forgot Handle</a>
+        <a href=/reset>Reset Password</a>
+      </main>
+    </body>
+  </html>
+    `
+  }
+
+  function processBody (request, body, done) {
+    const { handle, password } = body
+
+    let sessionID
+    runSeries([
+      authenticate,
+      createSession
+    ], error => {
+      if (error) return done(error)
+      done(null, sessionID)
+    })
+
+    function authenticate (done) {
+      verifyPassword(handle, password, (verifyError, account) => {
+        if (verifyError) {
+          const statusCode = verifyError.statusCode
+          if (statusCode === 500) return done(verifyError)
+          if (!account) return done(verifyError)
+          request.log.info(verifyError, 'authentication error')
+          const failures = account.failures + 1
+          if (failures >= 5) {
+            return request.record({
+              type: 'lockAccount',
+              handle
+            }, recordError => {
+              if (recordError) return done(recordError)
+              done(verifyError)
+            })
+          }
+          return indexes.account.update(
+            handle, { failures },
+            (updateError) => {
+              if (updateError) return done(updateError)
+              done(verifyError)
+            }
+          )
+        }
+        request.log.info('verified credentials')
+        done()
+      })
+    }
+
+    function createSession (done) {
+      sessionID = uuid.v4()
+      request.record({ type: 'session', handle, id: sessionID }, error => {
+        if (error) return done(error)
+        request.log.info({ id: sessionID }, 'recorded session')
+        done()
+      })
+    }
+  }
+
+  function onSuccess (request, response, body, sessionID) {
+    const expires = new Date(
+      Date.now() + (30 * 24 * 60 * 60 * 1000) // thirty days
+    )
+    setCookie(response, sessionID, expires)
+    request.log.info({ expires }, 'set cookie')
+    serve303(request, response, '/')
+  }
+}
+
+function serveSignOut (request, response) {
+  if (request.method !== 'POST') {
+    return serve405(request, response)
+  }
+  const body = {}
+  const fields = ['csrftoken', 'csrfnonce']
+  request.pipe(
+    new Busboy({
+      headers: request.headers,
+      limits: {
+        fieldNameSize: Math.max(fields.map(n => n.length)),
+        fields: 2,
+        parts: 1
+      }
+    })
+      .on('field', function (name, value, truncated, encoding, mime) {
+        if (fields.includes(name)) body[name] = value
+      })
+      .once('finish', onceParsed)
+  )
+
+  function onceParsed () {
+    csrf.verify({
+      action: '/signout',
+      sessionID: request.session.id,
+      token: body.csrftoken,
+      nonce: body.csrfnonce
+    }, error => {
+      if (error) return redirect()
+      clearCookie(response)
+      redirect()
+    })
+  }
+
+  function redirect () {
+    response.statusCode = 303
+    response.setHeader('Location', '/')
+    response.end()
+  }
+}
+
+function servePassword (request, response) {
+  const method = request.method
+  if (method === 'GET') return getPassword(request, response)
+  if (method === 'POST') return postPassword(request, response)
+  response.statusCode = 405
+  response.end()
+}
+
+function getPassword (request, response) {
+  if (request.query.token) return getWithToken(request, response)
+  getAuthenticated(request, response)
+}
+
+function getAuthenticated (request, response) {
+  const handle = request.account && request.account.handle
+  if (!handle) {
+    response.statusCode = 401
+    response.end()
+    return
+  }
+  const message = request.query.message
+  const messageParagraph = message
+    ? `<p class=message>${escape(message)}</p>`
+    : ''
+  response.setHeader('Content-Type', 'text/html')
+  response.end(`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Password / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    <main role=main>
+      <h2>Change Password</h2>
+      ${messageParagraph}
+      <form id=passwordForm method=post>
+        ${csrf.inputs({
+          action: '/password',
+          sessionID: request.session.id
+        })}
+        <p>
+          <label for=old>Old Password</label>
+          <input name=old type=password required autofocus autocomplete=off>
+        </p>
+        ${passwordInput({ label: 'New Password' })}
+        ${passwordRepeatInput()}
+        <button type=submit>Change Password</button>
+      </form>
+    </main>
+  </body>
+</html>
+  `)
+}
+
+function getWithToken (request, response) {
+  const token = request.query.token
+  if (!UUID_RE.test(token)) return invalidToken(request, response)
+  indexes.token.read(token, (error, tokenData) => {
+    if (error) return serve500(request, response, error)
+    if (!tokenData) return invalidToken(request, response)
+    if (tokenData.action !== 'reset') {
+      response.statusCode = 400
+      response.end()
+      return
+    }
+    const message = request.query.message || error
+    const messageParagraph = message
+      ? `<p class=message>${escape(message)}</p>`
+      : ''
+    response.setHeader('Content-Type', 'text/html')
+    response.end(`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Password / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    <main role=main>
+      <h2>Change Password</h2>
+      ${messageParagraph}
+      <form id=passwordForm method=post>
+        ${csrf.inputs({
+          action: '/password',
+          sessionID: request.session.id
+        })}
+        <input type=hidden name=token value="${token}">
+        ${passwordInput({
+          label: 'New Password',
+          autofocus: true
+        })}
+        ${passwordRepeatInput()}
+        <button type=submit>Change Password</button>
+      </form>
+    </main>
+  </body>
+</html>
+    `)
+  })
+}
+
+function invalidToken (request, response) {
+  response.statusCode = 400
+  response.setHeader('Content-Type', 'text/html')
+  return response.end(`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Password / Proseline</title>
+  </head>
+  <body>
+    ${header()}
+    <main role=main>
+      <h2>Change Password</h2>
+      <p class=message>The link you followed is invalid or expired.</p>
+    </main>
+  </body>
+</html>
+  `)
+}
+
+function postPassword (request, response) {
+  let handle
+  const body = {}
+  const fieldNames = [
+    'password', 'repeat', 'token', 'old',
+    'csrftoken', 'csrfnonce'
+  ]
+  runSeries([
+    readPostBody,
+    validateInputs,
+    checkOldPassword,
+    changePassword,
+    sendEMail
+  ], function (error) {
+    if (error) {
+      if (error.statusCode === 400) {
+        response.statusCode = 400
+        return getPassword(request, response, error.message)
+      }
+      request.log.error(error)
+      response.statusCode = error.statusCode || 500
+      return response.end()
+    }
+    response.setHeader('Content-Type', 'text/html')
+    response.end(`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Password / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    <main role=main>
+      <h2>Change Password</h2>
+      <p class=message>Password changed.</p>
+    </main>
+  </body>
+</html>
+    `)
+  })
+
+  function readPostBody (done) {
+    request.pipe(
+      new Busboy({
+        headers: request.headers,
+        limits: {
+          fieldNameSize: Math.max(fieldNames.map(x => x.length)),
+          fields: fieldNames.length,
+          parts: 1
+        }
+      })
+        .on('field', function (name, value, truncated, encoding, mime) {
+          if (fieldNames.includes(name)) body[name] = value
+        })
+        .once('finish', done)
+    )
+  }
+
+  function validateInputs (done) {
+    let error
+    const token = body.token
+    if (token && !UUID_RE.test(token)) {
+      error = new Error('invalid token')
+      error.fieldName = 'token'
+      return done(error)
+    }
+    const password = body.password
+    const repeat = body.repeat
+    if (password !== repeat) {
+      error = new Error('passwords did not match')
+      error.fieldName = 'repeat'
+      return done(error)
+    }
+    if (!passwords.valid(password)) {
+      error = new Error('invalid password')
+      error.fieldName = 'password'
+      return done(error)
+    }
+    const old = body.old
+    if (!token && !old) {
+      error = new Error('missing old password')
+      error.fieldName = 'old'
+      return done(error)
+    }
+    csrf.verify({
+      action: '/password',
+      sessionID: request.session.id,
+      token: body.csrftoken,
+      nonce: body.csrfnonce
+    }, done)
+  }
+
+  function checkOldPassword (done) {
+    const token = body.token
+    if (token) return done()
+    if (!request.account) {
+      const unauthorized = new Error('unauthorized')
+      unauthorized.statusCode = 401
+      return done(unauthorized)
+    }
+    handle = request.account.handle
+    verifyPassword(handle, body.old, error => {
+      if (error) {
+        const invalidOldPassword = new Error('invalid password')
+        invalidOldPassword.statusCode = 400
+        return done(invalidOldPassword)
+      }
+      return done()
+    })
+  }
+
+  function changePassword (done) {
+    const token = body.token
+    if (token) {
+      return indexes.token.read(token, (error, tokenData) => {
+        if (error) return done(error)
+        if (!tokenData || tokenData.action !== 'reset') {
+          const failed = new Error('invalid token')
+          failed.statusCode = 401
+          return done(failed)
+        }
+        request.record({ type: 'useToken', token }, error => {
+          if (error) return done(error)
+          handle = tokenData.handle
+          recordChange()
+        })
+      })
+    }
+
+    recordChange()
+
+    function recordChange () {
+      hashPassword(body.password, (error, passwordHash) => {
+        if (error) return done(error)
+        request.record({
+          type: 'changePassword',
+          handle,
+          passwordHash
+        }, done)
+      })
+    }
+  }
+
+  function sendEMail (done) {
+    indexes.account.read(handle, (error, account) => {
+      if (error) return done(error)
+      notify.passwordChanged({
+        to: account.email,
+        handle
+      }, error => {
+        // Log and eat errors.
+        if (error) request.log.error(error)
+        done()
+      })
+    })
+  }
+}
+
+function serveReset (request, response) {
+  const fields = {
+    handle: {
+      validate: handles.valid
+    }
+  }
+
+  formRoute({
+    action: '/reset',
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function form (request, data) {
+    return `
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Reset / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      <main role=main>
+        <h2>Reset Password</h2>
+        <form id=resetForm method=post>
+          ${data.error}
+          ${data.csrf}
+          <p>
+            <label for=handle>Handle</label>
+            <input
+                name=handle
+                value="${escapeHTML(data.handle.value)}"
+                type=text
+                pattern="${escapeHTML(handles.pattern)}"
+                required
+                autofocus
+                autocomplete=off>
+          </p>
+          ${data.handle.error}
+          <button type=submit>Send E-Mail</button>
+        </form>
+      </main>
+    </body>
+  </html>
+    `
+  }
+
+  function processBody (request, body, done) {
+    const handle = body.handle
+    indexes.account.read(handle, (error, account) => {
+      if (error) return done(error)
+      if (!account) {
+        const invalid = new Error('invalid handle')
+        invalid.statusCode = 400
+        return done(invalid)
+      }
+      const token = uuid.v4()
+      request.record({
+        type: 'resetPasswordToken',
+        token,
+        created: new Date().toISOString(),
+        handle
+      }, error => {
+        if (error) return done(error)
+        const url = `${process.env.BASE_HREF}/password?token=${token}`
+        notify.passwordReset({
+          to: account.email,
+          handle,
+          url
+        }, done)
+      })
+    })
+  }
+
+  function onSuccess (request, response) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(`
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Reset / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      <main role=main>
+        <h2>Reset Password</h2>
+        <p class=message>An e-mail has been sent.</p>
+      </main>
+    </body>
+  </html>
+    `.trim())
+  }
+}
+
+function setCookie (response, value, expires) {
+  response.setHeader(
+    'Set-Cookie',
+    cookie.serialize('commonform', value, {
+      expires,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV !== 'test'
+    })
+  )
+}
+
+function clearCookie (response) {
+  setCookie(response, '', new Date('1970-01-01'))
+}
+
+function eMailInput (options) {
+  return `
+<p>
+  <label for=email>E-Mail</label>
+  <input
+      name=email
+      type=email
+      value="${escapeHTML(options.value) || ''}"
+      ${options.autofocus ? 'autofocus' : ''}
+      required>
+</p>
+  `.trim()
+}
+
+function passwordInput ({ label, autofocus }) {
+  return `
+<p>
+  <label for=password>${escapeHTML(label || 'Password')}</label>
+  <input
+      name=password
+      type=password
+      required
+      autocomplete=off
+      ${autofocus ? 'autofocus' : ''}>
+</p>
+<p>${escapeHTML(passwords.html)}</p>
+  `.trim()
+}
+
+function passwordRepeatInput () {
+  return `
+<p>
+  <label for=repeat>Repeat</label>
+  <input
+      name=repeat
+      type=password
+      pattern="${passwords.pattern}"
+      required
+      autocomplete=off>
+</p>
+  `.trim()
+}
+
+function formRoute ({
+  action,
+  requireAuthentication,
+  loadGETData,
+  form,
+  fields,
+  fieldSizeLimit = 512000,
+  processBody,
+  onPost,
+  onSuccess
+}) {
+  if (typeof form !== 'function') {
+    throw new TypeError('missing form function')
+  }
+
+  if (typeof processBody !== 'function') {
+    throw new TypeError('missing processBody function')
+  }
+
+  if (typeof onSuccess !== 'function') {
+    throw new TypeError('missing onSuccess function')
+  }
+
+  const fieldNames = Object.keys(fields)
+  fieldNames.forEach(fieldName => {
+    const description = fields[fieldName]
+    if (typeof description.validate !== 'function') {
+      throw new TypeError('missing validate function for ' + fieldName)
+    }
+    if (!description.displayName) {
+      description.displayName = fieldName
+    }
+  })
+
+  return (request, response) => {
+    const method = request.method
+    const isGet = method === 'GET'
+    const isPost = !isGet && method === 'POST'
+    if (!isGet && !isPost) return serve405(request, response)
+    proceed()
+
+    function proceed () {
+      if (requireAuthentication && !request.account) {
+        return serve303(request, response, '/signin')
+      }
+      if (isGet) return get(request, response)
+      post(request, response)
+    }
+  }
+
+  function get (request, response, body, error) {
+    response.setHeader('Content-Type', 'text/html')
+    const data = {}
+    if (body) {
+      fieldNames.forEach(fieldName => {
+        data[fieldName] = {
+          value: body[fieldName],
+          error: error && error.fieldName === fieldName
+            ? `<p class=error>${escape(error.message)}</p>`
+            : ''
+        }
+      })
+    } else {
+      fieldNames.forEach(fieldName => {
+        data[fieldName] = { value: '', error: false }
+      })
+    }
+    if (error && !error.fieldName) {
+      data.error = `<p class=error>${escape(error.message)}</p>`
+    }
+    data.csrf = csrf.inputs({
+      action,
+      sessionID: request.session.id
+    })
+    if (loadGETData) {
+      return loadGETData(request, data, error => {
+        if (error) return serve500(request, response, error)
+        response.end(form(request, data))
+      })
+    }
+    response.end(form(request, data))
+  }
+
+  function post (request, response) {
+    if (onPost) onPost(request, response)
+
+    const body = {}
+    let fromProcess
+    runSeries([
+      parse,
+      validate,
+      process
+    ], error => {
+      if (error) {
+        const statusCode = error.statusCode
+        if (statusCode >= 400 && statusCode < 500) {
+          response.statusCode = statusCode
+          return get(request, response, body, error)
+        }
+        return serve500(request, response, error)
+      }
+      onSuccess(request, response, body, fromProcess)
+    })
+
+    function parse (done) {
+      request.pipe(
+        new Busboy({
+          headers: request.headers,
+          limits: {
+            fieldNameSize: Math.max(
+              fieldNames
+                .concat('csrftoken', 'csrfnonce')
+                .map(n => n.length)
+            ),
+            fields: fieldNames.length + 2,
+            fieldSizeLimit,
+            parts: 1
+          }
+        })
+          .on('field', function (name, value, truncated, encoding, mime) {
+            if (name === 'csrftoken' || name === 'csrfnonce') {
+              body[name] = value
+              return
+            }
+            const description = fields[name]
+            if (!description) return
+            body[name] = description.filter
+              ? description.filter(value)
+              : value
+          })
+          .once('finish', done)
+      )
+    }
+
+    function validate (done) {
+      for (let index = 0; index < fieldNames.length; index++) {
+        const fieldName = fieldNames[index]
+        const description = fields[fieldName]
+        const valid = description.validate(body[fieldName], body)
+        if (valid) continue
+        const error = new Error('invalid ' + description.displayName)
+        error.statusCode = 401
+        return done(error)
+      }
+      csrf.verify({
+        action,
+        sessionID: request.session.id,
+        token: body.csrftoken,
+        nonce: body.csrfnonce
+      }, done)
+    }
+
+    function process (done) {
+      processBody(request, body, (error, result) => {
+        if (error) return done(error)
+        fromProcess = result
+        done()
+      })
+    }
+  }
 }
 
 function serve404 (request, response) {
@@ -111,4 +1065,10 @@ function serve405 (request, response) {
   response.statusCode = 405
   response.setHeader('Content-Type', 'text/plain')
   response.end('Method Not Allowed')
+}
+
+function serve303 (request, response, location) {
+  response.statusCode = 303
+  response.setHeader('Location', location)
+  response.end()
 }
