@@ -5,5 +5,8 @@
       "CC-BY-3.0"
     ]
   },
+  "packages": {
+    "css-value": "0.0.1"
+  },
   "corrections": true
 }

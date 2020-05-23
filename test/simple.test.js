@@ -1,18 +1,15 @@
 const fs = require('fs')
-const handle = require('./')
+const handle = require('../')
 const http = require('http')
+const os = require('os')
+const path = require('path')
 const pino = require('pino')
 const pinoHTTP = require('pino-http')
+const rimraf = require('rimraf')
 const simpleConcat = require('simple-concat')
 const tape = require('tape')
 
 simple({
-  path: '/',
-  status: 401
-})
-
-simple({
-  auth: 'proseline:proseline',
   path: '/',
   status: 200,
   mime: 'text/html',
@@ -63,10 +60,10 @@ function simple ({
   mime,
   content
 }) {
-  tape(`${method} ${path}`, (test) => {
+  tape(`${method} ${path}`, test => {
     server((port, close) => {
       http.request({ auth, method, port, path })
-        .once('response', (response) => {
+        .once('response', response => {
           if (status) {
             test.equal(response.statusCode, status, String(status))
           }
@@ -96,15 +93,22 @@ function server (callback) {
   const logger = pino({}, fs.createWriteStream('test-server.log'))
   const server = http.createServer()
   const addLoggers = pinoHTTP({ logger })
-  server.on('request', (request, response) => {
-    addLoggers(request, response)
-    handle(request, response)
+  const tmpdir = path.join(os.tmpdir(), 'proseline-test')
+  fs.mkdtemp(tmpdir, (error, directory) => {
+    if (error) throw error
+    process.env.DIRECTORY = directory
+    server.on('request', (request, response) => {
+      addLoggers(request, response)
+      handle(request, response)
+    })
+    server.listen(0, function () {
+      const port = this.address().port
+      callback(port, cleanup)
+    })
+    function cleanup () {
+      server.close(() => {
+        rimraf(directory, () => { })
+      })
+    }
   })
-  server.listen(0, function () {
-    const port = this.address().port
-    callback(port, cleanup)
-  })
-  function cleanup () {
-    server.close()
-  }
 }
