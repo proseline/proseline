@@ -8,17 +8,27 @@ const tape = require('tape')
 
 simple({
   path: '/',
+  status: 401
+})
+
+simple({
+  auth: 'proseline:proseline',
+  path: '/',
+  status: 200,
+  mime: 'text/html',
   content: '<!doctype html>'
 })
 
 simple({
   path: '/styles.css',
+  status: 200,
   mime: 'text/css',
   content: 'font-family'
 })
 
 simple({
   path: '/client.js',
+  status: 200,
   mime: 'text/javascript',
   content: 'document.addEventListener'
 })
@@ -26,12 +36,14 @@ simple({
 simple({
   path: '/nonexistent',
   status: 404,
+  mime: 'text/html',
   content: '<!doctype html>'
 })
 
 simple({
   path: '/internal-error',
   status: 500,
+  mime: 'text/html',
   content: '<!doctype html>'
 })
 
@@ -44,27 +56,36 @@ simple({
 })
 
 function simple ({
+  auth,
   method = 'GET',
   path,
-  status = 200,
-  mime = 'text/html',
+  status,
+  mime,
   content
 }) {
   tape(`${method} ${path}`, (test) => {
     server((port, close) => {
-      http.request({ method, port, path })
+      http.request({ auth, method, port, path })
         .once('response', (response) => {
-          test.equal(response.statusCode, status, String(status))
-          test.equal(response.headers['content-type'], mime, mime)
-          simpleConcat(response, (error, body) => {
-            test.ifError(error, 'no error')
-            test.assert(
-              body.toString().includes(content),
-              content
-            )
-            test.end()
-            close()
-          })
+          if (status) {
+            test.equal(response.statusCode, status, String(status))
+          }
+          if (mime) {
+            test.equal(response.headers['content-type'], mime, mime)
+          }
+          if (content) {
+            return simpleConcat(response, (error, body) => {
+              test.ifError(error, 'no error')
+              test.assert(
+                body.toString().includes(content),
+                content
+              )
+              test.end()
+              close()
+            })
+          }
+          test.end()
+          close()
         })
         .end()
     })

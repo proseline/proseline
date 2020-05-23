@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "basic-auth": "^2.0.1",
     "do-not-cache": "^1.0.1",
     "pino": "^6.2.1",
     "pino-http": "^5.1.0",

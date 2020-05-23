@@ -1,3 +1,4 @@
+const basicAuth = require('basic-auth')
 const doNotCache = require('do-not-cache')
 const fs = require('fs')
 const parseURL = require('url-parse')
@@ -31,6 +32,14 @@ const meta = `
 function serveIndex (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
+  const auth = basicAuth(request)
+  const username = process.env.USERNAME || 'proseline'
+  const password = process.env.PASSWORD || 'proseline'
+  if (!auth || auth.name !== username || auth.pass !== password) {
+    response.statusCode = 401
+    response.setHeader('WWW-Authenticate', 'Basic realm="Proseline"')
+    return response.end()
+  }
   response.setHeader('Content-Type', 'text/html')
   response.end(`
 <!doctype html>
