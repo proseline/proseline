@@ -5,6 +5,7 @@ const doNotCache = require('do-not-cache')
 const escapeHTML = require('escape-html')
 const fs = require('fs')
 const hashPassword = require('./hash-password')
+const html = require('./html')
 const mail = require('./mail')
 const notify = require('./notify')
 const parseURL = require('url-parse')
@@ -29,6 +30,7 @@ module.exports = (request, response) => {
     if (pathname === '/signout') return serveSignOut(request, response)
     if (pathname === '/password') return servePassword(request, response)
     if (pathname === '/reset') return serveReset(request, response)
+    if (pathname === '/confirm') return serveConfirm(request, response)
     if (pathname === '/internal-error' && !inProduction) {
       const testError = new Error('test error')
       return serve500(request, response, testError)
@@ -39,18 +41,18 @@ module.exports = (request, response) => {
 
 // Partials
 
-const meta = `
+const meta = html`
 <meta charset=UTF-8>
 <meta name=viewport content="width=device-width, initial-scale=1">
 <link href=/styles.css rel=stylesheet>
-`.trim()
+`
 
 const header = '<header role=banner><h1>Proseline</h1></header>'
 
 function nav (request) {
   const account = request.account
   const handle = account && account.handle
-  return `
+  return html`
 <nav role=navigation>
   ${!handle && '<a id=signin class=button href=/signin>Sign In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
@@ -58,7 +60,7 @@ function nav (request) {
   ${handle && signoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
-  `.trim()
+  `
 }
 
 function signoutButton (request) {
@@ -66,12 +68,12 @@ function signoutButton (request) {
     action: '/signout',
     sessionID: request.session.id
   })
-  return `
+  return html`
 <form id=signoutForm action=/signout method=post>
   ${csrfInputs}
   <button id=signout type=submit>Sign Out</button>
 </form>
-  `.trim()
+  `
 }
 
 // Routes
@@ -80,7 +82,7 @@ function serveIndex (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
   response.setHeader('Content-Type', 'text/html')
-  response.end(`
+  response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -90,12 +92,10 @@ function serveIndex (request, response) {
   <body>
     ${header}
     ${nav(request)}
-    <main role=main>
-      <h1>Proseline</h1>
-    </main>
+    <main role=main></main>
   </body>
 </html>
-  `.trim())
+  `)
 }
 
 function serveStyles (request, response) {
@@ -237,7 +237,7 @@ function serveSignUp (request, response) {
 
   function onSuccess (request, response) {
     response.setHeader('Content-Type', 'text/html')
-    response.end(`
+    response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -258,7 +258,7 @@ function serveSignUp (request, response) {
 
   function form (request, data) {
     response.setHeader('Content-Type', 'text/html')
-    response.end(`
+    response.end(html`
   <!doctype html>
   <html lang=en-US>
     <head>
@@ -269,6 +269,7 @@ function serveSignUp (request, response) {
       ${header}
       ${nav(request)}
       <main role=main>
+        <h2>Sign Up</h2>
         <form id=signupForm method=post>
           ${data.error}
           ${data.csrf}
@@ -283,7 +284,7 @@ function serveSignUp (request, response) {
                 name=handle
                 type=text
                 pattern="${handles.pattern}"
-                value="${escape(data.handle.value)}"
+                value="${escapeHTML(data.handle.value)}"
                 autofocus
                 required>
           </p>
@@ -298,7 +299,7 @@ function serveSignUp (request, response) {
       </main>
     </body>
   </html>
-    `.trim())
+    `)
   }
 }
 
@@ -322,7 +323,7 @@ function serveSignIn (request, response) {
   })(request, response)
 
   function form (request, data) {
-    return `
+    return html`
   <!doctype html>
   <html lang=en-US>
     <head>
@@ -474,7 +475,7 @@ function servePassword (request, response) {
 }
 
 function getPassword (request, response) {
-  if (request.query.token) return getWithToken(request, response)
+  if (request.parsed.query.token) return getWithToken(request, response)
   getAuthenticated(request, response)
 }
 
@@ -485,12 +486,12 @@ function getAuthenticated (request, response) {
     response.end()
     return
   }
-  const message = request.query.message
+  const message = request.parsed.query.message
   const messageParagraph = message
-    ? `<p class=message>${escape(message)}</p>`
+    ? `<p class=message>${escapeHTML(message)}</p>`
     : ''
   response.setHeader('Content-Type', 'text/html')
-  response.end(`
+  response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -523,7 +524,7 @@ function getAuthenticated (request, response) {
 }
 
 function getWithToken (request, response) {
-  const token = request.query.token
+  const token = request.parsed.query.token
   if (!UUID_RE.test(token)) return invalidToken(request, response)
   storage.token.read(token, (error, tokenData) => {
     if (error) return serve500(request, response, error)
@@ -533,12 +534,12 @@ function getWithToken (request, response) {
       response.end()
       return
     }
-    const message = request.query.message || error
+    const message = request.parsed.query.message || error
     const messageParagraph = message
-      ? `<p class=message>${escape(message)}</p>`
+      ? `<p class=message>${escapeHTML(message)}</p>`
       : ''
     response.setHeader('Content-Type', 'text/html')
-    response.end(`
+    response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -574,7 +575,7 @@ function getWithToken (request, response) {
 function invalidToken (request, response) {
   response.statusCode = 400
   response.setHeader('Content-Type', 'text/html')
-  return response.end(`
+  return response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -617,7 +618,7 @@ function postPassword (request, response) {
       return response.end()
     }
     response.setHeader('Content-Type', 'text/html')
-    response.end(`
+    response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -765,7 +766,7 @@ function serveReset (request, response) {
   })(request, response)
 
   function form (request, data) {
-    return `
+    return html`
   <!doctype html>
   <html lang=en-US>
     <head>
@@ -828,7 +829,7 @@ function serveReset (request, response) {
 
   function onSuccess (request, response) {
     response.setHeader('Content-Type', 'text/html')
-    response.end(`
+    response.end(html`
   <!doctype html>
   <html lang=en-US>
     <head>
@@ -843,8 +844,74 @@ function serveReset (request, response) {
       </main>
     </body>
   </html>
-    `.trim())
+    `)
   }
+}
+
+function serveConfirm (request, response) {
+  if (request.method !== 'GET') {
+    return serve405(request, response)
+  }
+
+  const token = request.parsed.query.token
+  if (!UUID_RE.test(token)) return invalidToken(request, response)
+
+  storage.token.read(token, (error, tokenData) => {
+    if (error) return serve500(request, response, error)
+    if (!tokenData) return invalidToken(request, response)
+    storage.token.use(token, error => {
+      if (error) return serve500(request, response, error)
+      if (!tokenData) return invalidToken(request, response)
+      const action = tokenData.action
+      if (action !== 'confirm' && action !== 'email') {
+        response.statusCode = 400
+        return response.end()
+      }
+      const handle = tokenData.handle
+      if (action === 'confirm') {
+        storage.account.confirm(handle, error => {
+          if (error) return serve500(request, response, error)
+          serve303(request, response, '/signin')
+        })
+      }
+      if (action === 'email') {
+        const email = tokenData.email
+        let oldEMail
+        runSeries([
+          done => {
+            storage.account.read(handle, (error, account) => {
+              if (error) return done(error)
+              oldEMail = account.email
+              done()
+            })
+          },
+          done => storage.account.update(handle, { email }, done),
+          done => storage.email.delete(oldEMail, done),
+          done => storage.email.write(email, handle, done)
+        ], error => {
+          if (error) return serve500(request, response, error)
+          response.setHeader('Content-Type', 'text/html')
+          response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>E-Mail Change / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>E-Mail Change</h2>
+      <p class=message>The e-mail address for your account was successfully changed.</p>
+    </main>
+  </body>
+</html>
+          `)
+        })
+      }
+    })
+  })
 }
 
 function setCookie (response, value, expires) {
@@ -864,7 +931,7 @@ function clearCookie (response) {
 }
 
 function eMailInput (options) {
-  return `
+  return html`
 <p>
   <label for=email>E-Mail</label>
   <input
@@ -874,11 +941,11 @@ function eMailInput (options) {
       ${options.autofocus ? 'autofocus' : ''}
       required>
 </p>
-  `.trim()
+  `
 }
 
 function passwordInput ({ label, autofocus }) {
-  return `
+  return html`
 <p>
   <label for=password>${escapeHTML(label || 'Password')}</label>
   <input
@@ -889,11 +956,11 @@ function passwordInput ({ label, autofocus }) {
       ${autofocus ? 'autofocus' : ''}>
 </p>
 <p>${escapeHTML(passwords.html)}</p>
-  `.trim()
+  `
 }
 
 function passwordRepeatInput () {
-  return `
+  return html`
 <p>
   <label for=repeat>Repeat</label>
   <input
@@ -903,7 +970,7 @@ function passwordRepeatInput () {
       required
       autocomplete=off>
 </p>
-  `.trim()
+  `
 }
 
 function formRoute ({
@@ -964,7 +1031,7 @@ function formRoute ({
         data[fieldName] = {
           value: body[fieldName],
           error: error && error.fieldName === fieldName
-            ? `<p class=error>${escape(error.message)}</p>`
+            ? `<p class=error>${escapeHTML(error.message)}</p>`
             : ''
         }
       })
@@ -974,7 +1041,7 @@ function formRoute ({
       })
     }
     if (error && !error.fieldName) {
-      data.error = `<p class=error>${escape(error.message)}</p>`
+      data.error = `<p class=error>${escapeHTML(error.message)}</p>`
     }
     data.csrf = csrf.inputs({
       action,
@@ -1084,14 +1151,14 @@ function serve404 (request, response) {
     </main>
   </body>
 </html>
-  `.trim())
+  `)
 }
 
 function serve500 (request, response, error) {
   request.log.error(error)
   response.statusCode = 500
   response.setHeader('Content-Type', 'text/html')
-  response.end(`
+  response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -1104,7 +1171,7 @@ function serve500 (request, response, error) {
     </main>
   </body>
 </html>
-  `.trim())
+  `)
 }
 
 function serve405 (request, response) {

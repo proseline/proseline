@@ -55,7 +55,8 @@ To confirm the new e-mail address for your Proseline account, follow this link:
 function send ({ to, subject, markup }, callback) {
   mail({
     to,
+    subject,
     text: markup,
     html: markdown(markup)
-  })
+  }, callback)
 }
