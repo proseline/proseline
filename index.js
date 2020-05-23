@@ -31,7 +31,6 @@ const meta = `
 
 function serveIndex (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
-  doNotCache(response)
   const auth = basicAuth(request)
   const username = process.env.USERNAME || 'proseline'
   const password = process.env.PASSWORD || 'proseline'
@@ -40,6 +39,7 @@ function serveIndex (request, response) {
     response.setHeader('WWW-Authenticate', 'Basic realm="Proseline"')
     return response.end()
   }
+  doNotCache(response)
   response.setHeader('Content-Type', 'text/html')
   response.end(`
 <!doctype html>
