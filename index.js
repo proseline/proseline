@@ -10,6 +10,7 @@ const notify = require('./notify')
 const parseURL = require('url-parse')
 const path = require('path')
 const runSeries = require('run-series')
+const storage = require('./storage')
 const uuid = require('uuid')
 const verifyPassword = require('./verify-password')
 
@@ -345,7 +346,7 @@ function serveSignIn (request, response) {
               done(verifyError)
             })
           }
-          return indexes.account.update(
+          return storage.account.update(
             handle, { failures },
             (updateError) => {
               if (updateError) return done(updateError)
@@ -478,7 +479,7 @@ function getAuthenticated (request, response) {
 function getWithToken (request, response) {
   const token = request.query.token
   if (!UUID_RE.test(token)) return invalidToken(request, response)
-  indexes.token.read(token, (error, tokenData) => {
+  storage.token.read(token, (error, tokenData) => {
     if (error) return serve500(request, response, error)
     if (!tokenData) return invalidToken(request, response)
     if (tokenData.action !== 'reset') {
@@ -659,7 +660,7 @@ function postPassword (request, response) {
   function changePassword (done) {
     const token = body.token
     if (token) {
-      return indexes.token.read(token, (error, tokenData) => {
+      return storage.token.read(token, (error, tokenData) => {
         if (error) return done(error)
         if (!tokenData || tokenData.action !== 'reset') {
           const failed = new Error('invalid token')
@@ -689,7 +690,7 @@ function postPassword (request, response) {
   }
 
   function sendEMail (done) {
-    indexes.account.read(handle, (error, account) => {
+    storage.account.read(handle, (error, account) => {
       if (error) return done(error)
       notify.passwordChanged({
         to: account.email,
@@ -755,7 +756,7 @@ function serveReset (request, response) {
 
   function processBody (request, body, done) {
     const handle = body.handle
-    indexes.account.read(handle, (error, account) => {
+    storage.account.read(handle, (error, account) => {
       if (error) return done(error)
       if (!account) {
         const invalid = new Error('invalid handle')

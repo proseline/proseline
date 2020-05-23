@@ -1,5 +1,5 @@
-const expired = require('../util/expired')
-const indexes = require('../indexes')
+const expired = require('./expired')
+const indexes = require('./storage')
 const passwordHashing = require('./password-hashing')
 const securePassword = require('secure-password')
 
