@@ -1,13 +1,13 @@
 const expired = require('./expired')
-const indexes = require('./storage')
+const storage = require('./storage')
 const passwordHashing = require('./password-hashing')
 const securePassword = require('secure-password')
 
 module.exports = (handle, password, callback) => {
-  const file = indexes.account.filePath(handle)
-  indexes.lock(file, unlock => {
+  const file = storage.account.filePath(handle)
+  storage.lock(file, unlock => {
     callback = unlock(callback)
-    indexes.account.readWithoutLocking(handle, function (error, account) {
+    storage.account.readWithoutLocking(handle, function (error, account) {
       if (error) {
         error.statusCode = 500
         return callback(error)
@@ -47,7 +47,7 @@ module.exports = (handle, password, callback) => {
                   return callback(error)
                 }
                 account.passwordHash = newHash.toString('hex')
-                indexes.account.writeWithoutLocking(handle, account, error => {
+                storage.account.writeWithoutLocking(handle, account, error => {
                   if (error) return callback(error)
                   callback(null, account)
                 })

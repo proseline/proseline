@@ -28,6 +28,8 @@ module.exports = (request, response) => {
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/signin') return serveSignIn(request, response)
     if (pathname === '/signout') return serveSignOut(request, response)
+    if (pathname === '/account') return serveAccount(request, response)
+    if (pathname === '/email') return serveEMail(request, response)
     if (pathname === '/password') return servePassword(request, response)
     if (pathname === '/reset') return serveReset(request, response)
     if (pathname === '/confirm') return serveConfirm(request, response)
@@ -177,6 +179,28 @@ function serveSignUp (request, response) {
     const { handle, email, password } = body
     runSeries([
       done => {
+        storage.account.exists(handle, (error, exists) => {
+          if (error) return done(error)
+          if (exists) {
+            const error = new Error('handle taken')
+            error.statusCode = 400
+            return done(error)
+          }
+          done()
+        })
+      },
+      done => {
+        storage.email.read(email, (error, handle) => {
+          if (error) return done(error)
+          if (!handle) return done()
+          const hasAccount = new Error('e-mail address has an account')
+          hasAccount.hasAccount = true
+          hasAccount.statusCode = 401
+          hasAccount.fieldName = 'email'
+          done(hasAccount)
+        })
+      },
+      done => {
         hashPassword(password, (error, passwordHash) => {
           if (error) return done(error)
           runSeries([
@@ -201,13 +225,12 @@ function serveSignUp (request, response) {
       },
       done => {
         const token = uuid.v4()
-        const data = {
-          action: 'email',
-          crated: new Date().toISOString(),
+        storage.token.write(token, {
+          action: 'confirm',
+          created: new Date().toISOString(),
           handle,
           email
-        }
-        storage.token.write(token, data, error => {
+        }, error => {
           if (error) return done(error)
           request.log.info('recorded token')
           notify.confirmAccount({
@@ -463,6 +486,139 @@ function serveSignOut (request, response) {
     response.statusCode = 303
     response.setHeader('Location', '/')
     response.end()
+  }
+}
+
+function serveAccount (request, response) {
+  if (request.method !== 'GET') return serve405(request, response)
+  const account = request.account
+  if (!account) return serve302(request, response, '/signin')
+  response.setHeader('Content-Type', 'text/html')
+  response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Account / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Account</h2>
+      <table>
+        <tr>
+          <th>Handle</th>
+          <td class=handle>${escape(account.handle)}</td>
+        </tr>
+        <tr>
+          <th>E-Mail</th>
+          <td class=email>${escape(account.email)}</td>
+        </tr>
+        <tr>
+          <th>Joined</th>
+          <td class=joined>${escape(new Date(account.created).toISOString())}</td>
+        </tr>
+      </table>
+      <a class=button href=/password>Change Password</a>
+      <a class=button href=/email>Change E-Mail</a>
+    </main>
+  </body>
+</html>
+  `)
+}
+
+function serveEMail (request, response) {
+  const fields = {
+    email: {
+      filter: (e) => e.toLowerCase().trim(),
+      validate: (e) => EMAIL_RE.test(e)
+    }
+  }
+
+  formRoute({
+    action: '/email',
+    requireAuthentication: true,
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function form (request, data) {
+    return html`
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Change E-Mail / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      ${nav(request)}
+      <main role=main>
+        <h2>Change E-Mail</h2>
+        <form id=emailForm method=post>
+          ${data.error}
+          ${data.csrf}
+          ${eMailInput({ autofocus: true })}
+          ${data.email.error}
+          <button type=submit>Change E-Mail</button>
+        </form>
+      </main>
+    </body>
+  </html>
+    `
+  }
+
+  function onSuccess (request, response, body) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Change E-Mail / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      ${nav(request)}
+      <main role=main>
+        <h2>Change E-Mail</h2>
+        <p class=message>Confirmation e-mail sent.</p>
+      </main>
+    </body>
+  </html>
+    `)
+  }
+
+  function processBody (request, body, done) {
+    const handle = request.account.handle
+    const email = body.email
+    storage.email.read(email, (error, existingHandle) => {
+      if (error) return done(error)
+      if (existingHandle) {
+        const error = new Error('e-mail already has an account')
+        error.fieldName = 'email'
+        error.statusCode = 400
+        return done(error)
+      }
+      const token = uuid.v4()
+      request.record({
+        type: 'changeEMailToken',
+        token,
+        created: new Date().toISOString(),
+        handle,
+        email
+      }, error => {
+        if (error) return done(error)
+        request.log.info({ token }, 'e-mail change token')
+        notify.confirmEMailChange({
+          to: email,
+          url: `${process.env.BASE_HREF}/confirm?token=${token}`
+        }, done)
+      })
+    })
   }
 }
 
@@ -1182,6 +1338,12 @@ function serve405 (request, response) {
 
 function serve303 (request, response, location) {
   response.statusCode = 303
+  response.setHeader('Location', location)
+  response.end()
+}
+
+function serve302 (request, response, location) {
+  response.statusCode = 302
   response.setHeader('Location', location)
   response.end()
 }

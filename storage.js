@@ -1,4 +1,3 @@
-const JSONFile = require('./json-file')
 const fs = require('fs')
 const lock = require('lock').Lock()
 const path = require('path')
@@ -69,11 +68,11 @@ function simpleFiles (subdirectory, options) {
       const file = filePath(id)
       lock(file, unlock => {
         callback = unlock(callback)
-        JSONFile.read({ file, serialization }, (error, record) => {
+        readFile({ file, serialization }, (error, record) => {
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
-          JSONFile.write({ file, data: record, serialization }, error => {
+          writeFile({ file, data: record, serialization }, error => {
             if (error) return callback(error)
             callback(null, record)
           })
@@ -100,12 +99,12 @@ function simpleFiles (subdirectory, options) {
     const directory = path.dirname(file)
     fs.mkdir(directory, { recursive: true }, error => {
       if (error) return callback(error)
-      JSONFile.write({ file, data: value, serialization }, callback)
+      writeFile({ file, data: value, serialization }, callback)
     })
   }
 
   function readWithoutLocking (id, callback) {
-    JSONFile.read({ file: filePath(id), serialization }, callback)
+    readFile({ file: filePath(id), serialization }, callback)
   }
 
   function deleteWithoutLocking (id, callback) {
@@ -114,4 +113,36 @@ function simpleFiles (subdirectory, options) {
       return callback(error)
     })
   }
+}
+
+function readFile (options, callback) {
+  const file = options.file
+  const serialization = options.serialization || JSON
+  fs.readFile(file, (error, data) => {
+    if (error) {
+      if (error.code === 'ENOENT') return callback(null, null)
+      return callback(error)
+    }
+    try {
+      var parsed = serialization.parse(data)
+    } catch (error) {
+      return callback(error)
+    }
+    return callback(null, parsed)
+  })
+}
+
+function writeFile (options, callback) {
+  const file = options.file
+  const data = options.data
+  const serialization = options.serialization || JSON
+  const flag = options.flag || 'w'
+  const stringified = serialization.stringify(data)
+  fs.writeFile(file, stringified, { flag }, error => {
+    if (error) {
+      if (error.code === 'EEXIST') return callback(null, false)
+      return callback(error, false)
+    }
+    callback(null, true)
+  })
 }

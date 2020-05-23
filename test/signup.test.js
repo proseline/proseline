@@ -75,8 +75,10 @@ tape('sign up', test => {
       test.equal(options.to, email, 'sends e-mail')
       test.assert(options.subject.includes('Confirm'), 'subject')
       test.assert(options.text.includes('/confirm?token='), 'link')
-      const url = /http:\/\/[^ ]+/.exec(options.text)[0]
+      const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
       browser.navigateTo(url)
+        .then(() => browser.$('a=Sign In'))
+        .then(a => a.click())
         .then(() => browser.$('#signinForm input[name="handle"]'))
         .then(input => input.addValue(handle))
         .then(() => browser.$('#signinForm input[name="password"]'))
