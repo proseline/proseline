@@ -1,7 +1,6 @@
 const JSONFile = require('./json-file')
 const fs = require('fs')
 const lock = require('lock').Lock()
-const mkdirp = require('mkdirp')
 const path = require('path')
 
 module.exports = {
@@ -99,7 +98,7 @@ function simpleFiles (subdirectory, options) {
   function writeWithoutLocking (id, value, callback) {
     const file = filePath(id)
     const directory = path.dirname(file)
-    mkdirp(directory, error => {
+    fs.mkdir(directory, { recursive: true }, error => {
       if (error) return callback(error)
       JSONFile.write({ file, data: value, serialization }, callback)
     })

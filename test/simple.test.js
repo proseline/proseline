@@ -1,5 +1,5 @@
 const fs = require('fs')
-const handle = require('./')
+const handle = require('../')
 const http = require('http')
 const os = require('os')
 const path = require('path')
@@ -60,10 +60,10 @@ function simple ({
   mime,
   content
 }) {
-  tape(`${method} ${path}`, (test) => {
+  tape(`${method} ${path}`, test => {
     server((port, close) => {
       http.request({ auth, method, port, path })
-        .once('response', (response) => {
+        .once('response', response => {
           if (status) {
             test.equal(response.statusCode, status, String(status))
           }

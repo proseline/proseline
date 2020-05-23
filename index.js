@@ -9,6 +9,7 @@ const mail = require('./mail')
 const notify = require('./notify')
 const parseURL = require('url-parse')
 const path = require('path')
+const runParallel = require('run-parallel')
 const runSeries = require('run-series')
 const storage = require('./storage')
 const uuid = require('uuid')
@@ -18,20 +19,22 @@ const inProduction = process.env.NODE_ENV === 'production'
 
 module.exports = (request, response) => {
   const parsed = request.parsed = parseURL(request.url, true)
-  const pathname = parsed.pathname
-  if (pathname === '/') return serveIndex(request, response)
-  if (pathname === '/styles.css') return serveStyles(request, response)
-  if (pathname === '/client.js') return serveClient(request, response)
-  if (pathname === '/signup') return serveSignUp(request, response)
-  if (pathname === '/signin') return serveSignIn(request, response)
-  if (pathname === '/signout') return serveSignOut(request, response)
-  if (pathname === '/password') return servePassword(request, response)
-  if (pathname === '/reset') return serveReset(request, response)
-  if (pathname === '/internal-error' && !inProduction) {
-    const testError = new Error('test error')
-    return serve500(request, response, testError)
-  }
-  serve404(request, response)
+  authenticate(request, response, () => {
+    const pathname = parsed.pathname
+    if (pathname === '/') return serveIndex(request, response)
+    if (pathname === '/styles.css') return serveStyles(request, response)
+    if (pathname === '/client.js') return serveClient(request, response)
+    if (pathname === '/signup') return serveSignUp(request, response)
+    if (pathname === '/signin') return serveSignIn(request, response)
+    if (pathname === '/signout') return serveSignOut(request, response)
+    if (pathname === '/password') return servePassword(request, response)
+    if (pathname === '/reset') return serveReset(request, response)
+    if (pathname === '/internal-error' && !inProduction) {
+      const testError = new Error('test error')
+      return serve500(request, response, testError)
+    }
+    serve404(request, response)
+  })
 }
 
 // Partials
@@ -43,6 +46,33 @@ const meta = `
 `.trim()
 
 const header = '<header role=banner><h1>Proseline</h1></header>'
+
+function nav (request) {
+  const account = request.account
+  const handle = account && account.handle
+  return `
+<nav role=navigation>
+  ${!handle && '<a id=signin class=button href=/signin>Sign In</a>'}
+  ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
+  ${handle && '<a id=edit class=button href=/edit>New Form</a>'}
+  ${handle && signoutButton(request)}
+  ${handle && '<a id=account class=button href=/account>Account</a>'}
+</nav>
+  `.trim()
+}
+
+function signoutButton (request) {
+  const csrfInputs = csrf.inputs({
+    action: '/signout',
+    sessionID: request.session.id
+  })
+  return `
+<form id=signoutForm action=/signout method=post>
+  ${csrfInputs}
+  <button id=signout type=submit>Sign Out</button>
+</form>
+  `.trim()
+}
 
 // Routes
 
@@ -58,7 +88,10 @@ function serveIndex (request, response) {
     <title>Proseline</title>
   </head>
   <body>
+    ${header}
+    ${nav(request)}
     <main role=main>
+      <h1>Proseline</h1>
     </main>
   </body>
 </html>
@@ -146,13 +179,20 @@ function serveSignUp (request, response) {
       done => {
         hashPassword(password, (error, passwordHash) => {
           if (error) return done(error)
-          request.record({
-            type: 'account',
-            handle,
-            email,
-            created: new Date().toISOString(),
-            passwordHash
-          }, error => {
+          runSeries([
+            done => {
+              storage.account.write(handle, {
+                handle,
+                email,
+                passwordHash,
+                created: new Date().toISOString(),
+                confirmed: false,
+                failures: 0,
+                locked: false
+              }, done)
+            },
+            done => { storage.email.write(email, handle, done) }
+          ], error => {
             if (error) return done(error)
             request.log.info('recorded account')
             done()
@@ -161,12 +201,13 @@ function serveSignUp (request, response) {
       },
       done => {
         const token = uuid.v4()
-        request.record({
-          type: 'confirmAccountToken',
-          token,
-          created: new Date().toISOString(),
-          handle
-        }, error => {
+        const data = {
+          action: 'email',
+          crated: new Date().toISOString(),
+          handle,
+          email
+        }
+        storage.token.write(token, data, error => {
           if (error) return done(error)
           request.log.info('recorded token')
           notify.confirmAccount({
@@ -204,9 +245,8 @@ function serveSignUp (request, response) {
     <title>Sign Up / Proseline</title>
   </head>
   <body>
-    <header role=banner>
-      <h1>Proseline</h1>
-    </header>
+    ${header}
+    ${nav(request)}
     <main role=main>
       <h2>Success</h2>
       <p class=message>Check your e-mail for a link to confirm your new account.</p>
@@ -226,9 +266,8 @@ function serveSignUp (request, response) {
       <title>Sign Up / Proseline</title>
     </head>
     <body>
-      <header role=banner>
-        <h1>Proseline</h1>
-      </header>
+      ${header}
+      ${nav(request)}
       <main role=main>
         <form id=signupForm method=post>
           ${data.error}
@@ -250,7 +289,7 @@ function serveSignUp (request, response) {
           </p>
           ${data.handle.error}
           <p>${handles.html}</p>
-          ${passwordInput()}
+          ${passwordInput({})}
           ${data.password.error}
           ${passwordRepeatInput()}
           ${data.repeat.error}
@@ -292,6 +331,7 @@ function serveSignIn (request, response) {
     </head>
     <body>
       ${header}
+      ${nav(request)}
       <main role=main>
         <h2>Log In</h2>
         <form id=signinForm method=post>
@@ -338,9 +378,9 @@ function serveSignIn (request, response) {
           request.log.info(verifyError, 'authentication error')
           const failures = account.failures + 1
           if (failures >= 5) {
-            return request.record({
-              type: 'lockAccount',
-              handle
+            return storage.account.update(handle, {
+              locked: new Date().toISOString(),
+              failures: 0
             }, recordError => {
               if (recordError) return done(recordError)
               done(verifyError)
@@ -361,8 +401,13 @@ function serveSignIn (request, response) {
 
     function createSession (done) {
       sessionID = uuid.v4()
-      request.record({ type: 'session', handle, id: sessionID }, error => {
+      storage.session.write(sessionID, {
+        id: sessionID,
+        handle,
+        created: new Date().toISOString()
+      }, (error, success) => {
         if (error) return done(error)
+        if (!success) return done(new Error('session collision'))
         request.log.info({ id: sessionID }, 'recorded session')
         done()
       })
@@ -454,6 +499,7 @@ function getAuthenticated (request, response) {
   </head>
   <body>
     ${header}
+    ${nav(request)}
     <main role=main>
       <h2>Change Password</h2>
       ${messageParagraph}
@@ -501,6 +547,7 @@ function getWithToken (request, response) {
   </head>
   <body>
     ${header}
+    ${nav(request)}
     <main role=main>
       <h2>Change Password</h2>
       ${messageParagraph}
@@ -535,7 +582,8 @@ function invalidToken (request, response) {
     <title>Password / Proseline</title>
   </head>
   <body>
-    ${header()}
+    ${header}
+    ${nav(request)}
     <main role=main>
       <h2>Change Password</h2>
       <p class=message>The link you followed is invalid or expired.</p>
@@ -578,6 +626,7 @@ function postPassword (request, response) {
   </head>
   <body>
     ${header}
+    ${nav(request)}
     <main role=main>
       <h2>Change Password</h2>
       <p class=message>Password changed.</p>
@@ -667,7 +716,7 @@ function postPassword (request, response) {
           failed.statusCode = 401
           return done(failed)
         }
-        request.record({ type: 'useToken', token }, error => {
+        storage.token.use(token, error => {
           if (error) return done(error)
           handle = tokenData.handle
           recordChange()
@@ -680,11 +729,7 @@ function postPassword (request, response) {
     function recordChange () {
       hashPassword(body.password, (error, passwordHash) => {
         if (error) return done(error)
-        request.record({
-          type: 'changePassword',
-          handle,
-          passwordHash
-        }, done)
+        storage.account.update(handle, { passwordHash }, done)
       })
     }
   }
@@ -729,6 +774,7 @@ function serveReset (request, response) {
     </head>
     <body>
       ${header}
+      ${nav(request)}
       <main role=main>
         <h2>Reset Password</h2>
         <form id=resetForm method=post>
@@ -764,9 +810,8 @@ function serveReset (request, response) {
         return done(invalid)
       }
       const token = uuid.v4()
-      request.record({
-        type: 'resetPasswordToken',
-        token,
+      storage.token.write(token, {
+        action: 'reset',
         created: new Date().toISOString(),
         handle
       }, error => {
@@ -1072,4 +1117,55 @@ function serve303 (request, response, location) {
   response.statusCode = 303
   response.setHeader('Location', location)
   response.end()
+}
+
+function authenticate (request, response, handler) {
+  const header = request.headers.cookie
+  if (!header) {
+    createGuestSession()
+    return proceed()
+  }
+  const parsed = cookie.parse(header)
+  const sessionID = parsed.commonform
+  if (!sessionID) {
+    createGuestSession()
+    return proceed()
+  }
+  storage.session.read(sessionID, function (error, session) {
+    if (error) return serve500(request, response, error)
+    if (!session) {
+      request.session = { id: sessionID }
+      return proceed()
+    }
+    const handle = session.handle
+    request.log.info({ sessionID, handle }, 'authenticated')
+    request.session = session
+    runParallel({
+      account: function (done) {
+        storage.account.read(handle, done)
+      }
+    }, function (error, results) {
+      if (error) return serve500(request, response, error)
+      const account = results.account
+      if (!account) {
+        const error = new Error('could not load account')
+        return serve500(request, response, error)
+      }
+      if (account.confirmed) request.account = account
+      proceed()
+    })
+  })
+
+  function proceed () {
+    handler(request, response)
+  }
+
+  function createGuestSession () {
+    const id = uuid.v4()
+    const expires = new Date(
+      Date.now() + (30 * 24 * 60 * 60 * 1000)
+    )
+    setCookie(response, id, expires)
+    request.session = { id, expires }
+  }
 }

@@ -8,10 +8,10 @@
     "do-not-cache": "^1.0.1",
     "escape-html": "^1.0.3",
     "lock": "^1.1.0",
-    "mkdirp": "^1.0.4",
     "nodemailer": "^6.4.6",
     "pino": "^6.2.1",
     "pino-http": "^5.1.0",
+    "run-parallel": "^1.1.9",
     "run-series": "^1.1.8",
     "secure-password": "^4.0.0",
     "url-parse": "^1.4.7",
@@ -26,7 +26,8 @@
     "simple-concat": "^1.0.0",
     "sodium-native": "^3.1.1",
     "standard": "^14.3.3",
-    "tape": "^5.0.0"
+    "tape": "^5.0.0",
+    "webdriverio": "^6.1.12"
   },
   "husky": {
     "hooks": {
@@ -40,6 +41,6 @@
     "fix": "standard --fix",
     "licenses": "licensee --errors-only",
     "lint": "standard",
-    "test": "node test.js"
+    "test": "NODE_ENV=test tape test/*.test.js"
   }
 }
