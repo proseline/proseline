@@ -215,7 +215,9 @@ function serveSignUp (request, response) {
                 locked: false
               }, done)
             },
-            done => { storage.email.write(email, handle, done) }
+            done => {
+              storage.email.write(email, handle, done)
+            }
           ], error => {
             if (error) return done(error)
             request.log.info('recorded account')
@@ -604,9 +606,8 @@ function serveEMail (request, response) {
         return done(error)
       }
       const token = uuid.v4()
-      request.record({
-        type: 'changeEMailToken',
-        token,
+      storage.token.write(token, {
+        action: 'email',
         created: new Date().toISOString(),
         handle,
         email
@@ -681,14 +682,15 @@ function getAuthenticated (request, response) {
 
 function getWithToken (request, response) {
   const token = request.parsed.query.token
-  if (!UUID_RE.test(token)) return invalidToken(request, response)
+  if (!UUID_RE.test(token)) {
+    return invalidToken(request, response)
+  }
   storage.token.read(token, (error, tokenData) => {
     if (error) return serve500(request, response, error)
     if (!tokenData) return invalidToken(request, response)
     if (tokenData.action !== 'reset') {
       response.statusCode = 400
-      response.end()
-      return
+      return response.end()
     }
     const message = request.parsed.query.message || error
     const messageParagraph = message
@@ -1010,14 +1012,15 @@ function serveConfirm (request, response) {
   }
 
   const token = request.parsed.query.token
-  if (!UUID_RE.test(token)) return invalidToken(request, response)
+  if (!UUID_RE.test(token)) {
+    return invalidToken(request, response)
+  }
 
   storage.token.read(token, (error, tokenData) => {
     if (error) return serve500(request, response, error)
     if (!tokenData) return invalidToken(request, response)
     storage.token.use(token, error => {
       if (error) return serve500(request, response, error)
-      if (!tokenData) return invalidToken(request, response)
       const action = tokenData.action
       if (action !== 'confirm' && action !== 'email') {
         response.statusCode = 400
@@ -1086,15 +1089,15 @@ function clearCookie (response) {
   setCookie(response, '', new Date('1970-01-01'))
 }
 
-function eMailInput (options) {
+function eMailInput ({ value, autofocus }) {
   return html`
 <p>
   <label for=email>E-Mail</label>
   <input
       name=email
       type=email
-      value="${escapeHTML(options.value) || ''}"
-      ${options.autofocus ? 'autofocus' : ''}
+      value="${escapeHTML(value || '')}"
+      ${autofocus ? 'autofocus' : ''}
       required>
 </p>
   `
@@ -1302,8 +1305,10 @@ function serve404 (request, response) {
     <title>Not Found / Proseline</title>
   </head>
   <body>
+    ${header}
+    ${nav(request)}
     <main>
-      <h1>Not Found</h1>
+      <h2>Not Found</h2>
     </main>
   </body>
 </html>

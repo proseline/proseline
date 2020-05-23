@@ -1,4 +1,4 @@
-const csrf = require('../util/csrf')
+const csrf = require('../csrf')
 const tape = require('tape')
 const uuid = require('uuid')
 

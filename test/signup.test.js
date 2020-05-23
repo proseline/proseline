@@ -116,9 +116,14 @@ tape('sign up same handle', test => {
     webdriver()
       .then(loaded => { browser = loaded })
       // Sign up using the handle.
-      .then(() => signup({
-        browser, port, handle, password, email: firstEMail
-      }))
+      .then(() => {
+        return new Promise((resolve, reject) => signup({
+          browser, port, handle, password, email: firstEMail
+        }, error => {
+          if (error) reject(error)
+          resolve()
+        }))
+      })
       // Try to sign up again with the same handle.
       .then(() => browser.navigateTo('http://localhost:' + port))
       .then(() => browser.$('a=Sign Up'))
@@ -171,9 +176,14 @@ tape('sign up same email', test => {
     let browser
     webdriver()
       .then(loaded => { browser = loaded })
-      .then(() => signup({
-        browser, port, handle: firstHandle, password, email
-      }))
+      .then(() => {
+        return new Promise((resolve, reject) => signup({
+          browser, port, handle: firstHandle, password, email
+        }, error => {
+          if (error) reject(error)
+          resolve()
+        }))
+      })
       // Try to sign up again with the same e-mail.
       .then(() => browser.navigateTo('http://localhost:' + port))
       .then(() => browser.$('a=Sign Up'))

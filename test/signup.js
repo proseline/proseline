@@ -30,7 +30,7 @@ module.exports = (options, callback) => {
     if (!options.subject.includes('Confirm')) {
       return callback(new Error('no confirmation e-mail'))
     }
-    const url = /http:\/\/[^ ]+/.exec(options.text)[0]
+    const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
     browser.navigateTo(url)
       .then(() => { callback() })
       .catch(callback)

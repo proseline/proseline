@@ -49,7 +49,7 @@ tape('reset password', test => {
           mail.once('sent', options => {
             test.equal(options.to, email, 'sent mail')
             test.assert(options.subject.includes('Reset'), 'reset')
-            const url = /http:\/\/[^ ]+/.exec(options.text)[0]
+            const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
             browser.navigateTo(url)
               // Fill reset form.
               .then(() => browser.$('#passwordForm input[name="password"]'))
