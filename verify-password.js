@@ -34,6 +34,7 @@ module.exports = (handle, password, callback) => {
             return callback(error)
           }
           switch (result) {
+            /* istanbul ignore next */
             case securePassword.INVALID_UNRECOGNIZED_HASH:
               var unrecognized = new Error('unrecognized hash')
               unrecognized.statusCode = 500
@@ -42,6 +43,7 @@ module.exports = (handle, password, callback) => {
               var invalid = new Error('invalid handle or password')
               invalid.statusCode = 403
               return callback(invalid, account)
+            /* istanbul ignore next */
             case securePassword.VALID_NEEDS_REHASH:
               return passwordHashing.hash(passwordBuffer, (error, newHash) => {
                 if (error) {

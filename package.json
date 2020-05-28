@@ -35,7 +35,7 @@
   },
   "scripts": {
     "precommit": "npm run lint && npm run coverage && npm run licenses && npm run deps",
-    "coverage": "nyc npm run test",
+    "coverage": "nyc --reporter=lcov --reporter=text npm run test",
     "deps": "depcheck",
     "fix": "standard --fix",
     "licenses": "licensee --errors-only",

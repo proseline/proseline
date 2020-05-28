@@ -24,9 +24,11 @@ token.use = (id, callback) => {
   lock(file, unlock => {
     callback = unlock(callback)
     token.readWithoutLocking(id, (error, record) => {
+      /* istanbul ignore if */
       if (error) return callback(error)
       if (!record) return callback(null, null)
       token.deleteWithoutLocking(id, error => {
+        /* istanbul ignore if */
         if (error) return callback(error)
         callback(null, record)
       })
@@ -59,6 +61,7 @@ function simpleFiles (subdirectory, options) {
           if (error.code === 'ENOENT') {
             return callback(null, false)
           }
+          /* istanbul ignore next */
           return callback(error)
         }
         callback(null, true)
@@ -69,10 +72,12 @@ function simpleFiles (subdirectory, options) {
       lock(file, unlock => {
         callback = unlock(callback)
         readFile({ file, serialization }, (error, record) => {
+          /* istanbul ignore if */
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
           writeFile({ file, data: record, serialization }, error => {
+            /* istanbul ignore if */
             if (error) return callback(error)
             callback(null, record)
           })
@@ -82,6 +87,7 @@ function simpleFiles (subdirectory, options) {
     list: callback => {
       const directory = path.dirname(filePath('x'))
       fs.readdir(directory, (error, entries) => {
+        /* istanbul ignore if */
         if (error) return callback(error)
         const ids = entries.map(entry => path.basename(entry, '.json'))
         callback(null, ids)
@@ -98,6 +104,7 @@ function simpleFiles (subdirectory, options) {
     const file = filePath(id)
     const directory = path.dirname(file)
     fs.mkdir(directory, { recursive: true }, error => {
+      /* istanbul ignore if */
       if (error) return callback(error)
       writeFile({ file, data: value, serialization }, callback)
     })
@@ -110,6 +117,7 @@ function simpleFiles (subdirectory, options) {
   function deleteWithoutLocking (id, callback) {
     fs.unlink(filePath(id), error => {
       if (error && error.code === 'ENOENT') return callback()
+      /* istanbul ignore next */
       return callback(error)
     })
   }
@@ -121,11 +129,13 @@ function readFile (options, callback) {
   fs.readFile(file, (error, data) => {
     if (error) {
       if (error.code === 'ENOENT') return callback(null, null)
+      /* istanbul ignore next */
       return callback(error)
     }
     try {
       var parsed = serialization.parse(data)
     } catch (error) {
+      /* istanbul ignore next */
       return callback(error)
     }
     return callback(null, parsed)
@@ -141,6 +151,7 @@ function writeFile (options, callback) {
   fs.writeFile(file, stringified, { flag }, error => {
     if (error) {
       if (error.code === 'EEXIST') return callback(null, false)
+      /* istanbul ignore next */
       return callback(error, false)
     }
     callback(null, true)
