@@ -59,7 +59,6 @@ function nav (request) {
 <nav role=navigation>
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
-  ${handle && '<a id=edit class=button href=/edit>New Form</a>'}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
