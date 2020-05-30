@@ -1,9 +1,9 @@
 const mail = require('../mail').events
 const server = require('./server')
-const signin = require('./signin')
+const login = require('./login')
 const signup = require('./signup')
 const tape = require('tape')
-const verifySignIn = require('./verify-signin')
+const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
 tape('change e-mail', test => {
@@ -24,10 +24,10 @@ tape('change e-mail', test => {
           resolve()
         })
       }))
-      .then(() => signin({
+      .then(() => login({
         browser, port, handle, password
       }))
-      .then(() => verifySignIn({
+      .then(() => verifyLogIn({
         browser, port, test, handle, email: oldEMail
       }))
       // Navigate to password-change page.
@@ -83,10 +83,10 @@ tape('change e-mail to existing', test => {
           resolve()
         })
       }))
-      .then(() => signin({
+      .then(() => login({
         browser, port, handle, password
       }))
-      .then(() => verifySignIn({
+      .then(() => verifyLogIn({
         browser, port, test, handle, email
       }))
       // Navigate to password-change page.

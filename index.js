@@ -26,8 +26,8 @@ module.exports = (request, response) => {
     if (pathname === '/styles.css') return serveStyles(request, response)
     if (pathname === '/client.js') return serveClient(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
-    if (pathname === '/signin') return serveSignIn(request, response)
-    if (pathname === '/signout') return serveSignOut(request, response)
+    if (pathname === '/login') return serveLogIn(request, response)
+    if (pathname === '/logout') return serveLogOut(request, response)
     if (pathname === '/account') return serveAccount(request, response)
     if (pathname === '/handle') return serveHandle(request, response)
     if (pathname === '/email') return serveEMail(request, response)
@@ -57,24 +57,24 @@ function nav (request) {
   const handle = account && account.handle
   return html`
 <nav role=navigation>
-  ${!handle && '<a id=signin class=button href=/signin>Sign In</a>'}
+  ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && '<a id=edit class=button href=/edit>New Form</a>'}
-  ${handle && signoutButton(request)}
+  ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
   `
 }
 
-function signoutButton (request) {
+function logoutButton (request) {
   const csrfInputs = csrf.inputs({
-    action: '/signout',
+    action: '/logout',
     sessionID: request.session.id
   })
   return html`
-<form id=signoutForm action=/signout method=post>
+<form id=logoutForm action=/logout method=post>
   ${csrfInputs}
-  <button id=signout type=submit>Sign Out</button>
+  <button id=logout type=submit>Log Out</button>
 </form>
   `
 }
@@ -329,7 +329,7 @@ function serveSignUp (request, response) {
   }
 }
 
-function serveSignIn (request, response) {
+function serveLogIn (request, response) {
   const fields = {
     handle: {
       filter: (e) => e.toLowerCase().trim(),
@@ -341,7 +341,7 @@ function serveSignIn (request, response) {
   }
 
   module.exports = formRoute({
-    action: '/signin',
+    action: '/login',
     form,
     fields,
     processBody,
@@ -354,14 +354,14 @@ function serveSignIn (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Sign In / Proseline</title>
+      <title>Log In / Proseline</title>
     </head>
     <body>
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Sign In</h2>
-        <form id=signinForm method=post>
+        <h2>Log In</h2>
+        <form id=loginForm method=post>
           ${data.error}
           ${data.csrf}
           <p>
@@ -374,7 +374,7 @@ function serveSignIn (request, response) {
             <input name=password type=password required>
           </p>
           ${data.password.error}
-          <button type=submit>Sign In</button>
+          <button type=submit>Log In</button>
         </form>
         <a href=/handle>Forgot Handle</a>
         <a href=/reset>Reset Password</a>
@@ -451,7 +451,7 @@ function serveSignIn (request, response) {
   }
 }
 
-function serveSignOut (request, response) {
+function serveLogOut (request, response) {
   if (request.method !== 'POST') {
     return serve405(request, response)
   }
@@ -474,7 +474,7 @@ function serveSignOut (request, response) {
 
   function onceParsed () {
     csrf.verify({
-      action: '/signout',
+      action: '/logout',
       sessionID: request.session.id,
       token: body.csrftoken,
       nonce: body.csrfnonce
@@ -495,7 +495,7 @@ function serveSignOut (request, response) {
 function serveAccount (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
   const account = request.account
-  if (!account) return serve302(request, response, '/signin')
+  if (!account) return serve302(request, response, '/login')
   response.setHeader('Content-Type', 'text/html')
   response.end(html`
 <!doctype html>
@@ -1115,7 +1115,7 @@ function serveConfirm (request, response) {
       if (action === 'confirm') {
         storage.account.confirm(handle, error => {
           if (error) return serve500(request, response, error)
-          serve303(request, response, '/signin')
+          serve303(request, response, '/login')
         })
       }
       if (action === 'email') {
@@ -1260,7 +1260,7 @@ function formRoute ({
 
     function proceed () {
       if (requireAuthentication && !request.account) {
-        return serve303(request, response, '/signin')
+        return serve303(request, response, '/login')
       }
       if (isGet) return get(request, response)
       post(request, response)

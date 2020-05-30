@@ -1,9 +1,9 @@
 const http = require('http')
 const server = require('./server')
-const signin = require('./signin')
+const login = require('./login')
 const signup = require('./signup')
 const tape = require('tape')
-const verifySignIn = require('./verify-signin')
+const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
 const path = '/account'
@@ -13,7 +13,7 @@ tape('GET ' + path, test => {
     http.request({ path, port })
       .once('response', response => {
         test.equal(response.statusCode, 302, '302')
-        test.equal(response.headers.location, '/signin', 'redirect')
+        test.equal(response.headers.location, '/login', 'redirect')
         test.end()
         done()
       })
@@ -37,8 +37,8 @@ tape('browse ' + path, test => {
           resolve()
         }))
       })
-      .then(() => signin({ browser, port, handle, password }))
-      .then(() => verifySignIn({ browser, test, port, email, handle }))
+      .then(() => login({ browser, port, handle, password }))
+      .then(() => verifyLogIn({ browser, test, port, email, handle }))
       .then(() => finish())
       .catch(error => {
         test.fail(error, 'catch')

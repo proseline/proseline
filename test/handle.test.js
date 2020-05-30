@@ -42,7 +42,7 @@ tape('discover handle', test => {
         }))
       })
       .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#signin'))
+      .then(() => browser.$('#login'))
       .then(a => a.click())
       .then(() => browser.$('a=Forgot Handle'))
       .then(a => a.click())

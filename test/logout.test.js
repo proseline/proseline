@@ -1,13 +1,13 @@
 const http = require('http')
 const server = require('./server')
-const signin = require('./signin')
-const signout = require('./signout')
+const login = require('./login')
+const logout = require('./logout')
 const signup = require('./signup')
 const tape = require('tape')
-const verifySignIn = require('./verify-signin')
+const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
-const path = '/signout'
+const path = '/logout'
 
 tape('GET ' + path, test => {
   server((port, done) => {
@@ -37,14 +37,14 @@ tape('log out', test => {
           resolve()
         })
       }))
-      .then(() => signin({ browser, port, handle, password }))
-      .then(() => verifySignIn({ browser, port, test, handle, email }))
-      .then(() => browser.$('#signout'))
+      .then(() => login({ browser, port, handle, password }))
+      .then(() => verifyLogIn({ browser, port, test, handle, email }))
+      .then(() => browser.$('#logout'))
       .then(element => element.click())
       .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#signin'))
+      .then(() => browser.$('#login'))
       .then(h2 => h2.getText())
-      .then(text => test.equal(text, 'Sign In', 'Sign In'))
+      .then(text => test.equal(text, 'Log In', 'Log In'))
       .then(finish)
       .catch(error => {
         test.fail(error)
@@ -96,17 +96,17 @@ tape('log in as ana, log in as bob', test => {
           resolve()
         })
       }))
-      .then(() => signin({
+      .then(() => login({
         browser, port, handle: ana.handle, password: ana.password
       }))
-      .then(() => verifySignIn({
+      .then(() => verifyLogIn({
         browser, port, test, handle: ana.handle, email: ana.email
       }))
-      .then(() => signout({ browser, port }))
-      .then(() => signin({
+      .then(() => logout({ browser, port }))
+      .then(() => login({
         browser, port, handle: bob.handle, password: bob.password
       }))
-      .then(() => verifySignIn({
+      .then(() => verifyLogIn({
         browser, port, test, handle: bob.handle, email: bob.email
       }))
       .then(finish)

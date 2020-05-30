@@ -3,7 +3,7 @@ const mail = require('../mail').events
 const server = require('./server')
 const signup = require('util').promisify(require('./signup'))
 const tape = require('tape')
-const verifySignIn = require('./verify-signin')
+const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
 const path = '/signup'
@@ -77,15 +77,15 @@ tape('sign up', test => {
       test.assert(options.text.includes('/confirm?token='), 'link')
       const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
       browser.navigateTo(url)
-        .then(() => browser.$('a=Sign In'))
+        .then(() => browser.$('a=Log In'))
         .then(a => a.click())
-        .then(() => browser.$('#signinForm input[name="handle"]'))
+        .then(() => browser.$('#loginForm input[name="handle"]'))
         .then(input => input.addValue(handle))
-        .then(() => browser.$('#signinForm input[name="password"]'))
+        .then(() => browser.$('#loginForm input[name="password"]'))
         .then(input => input.addValue(password))
-        .then(() => browser.$('#signinForm button[type="submit"]'))
+        .then(() => browser.$('#loginForm button[type="submit"]'))
         .then(submit => submit.click())
-        .then(() => verifySignIn({
+        .then(() => verifyLogIn({
           browser, port, test, handle, email
         }))
         .then(() => finish())

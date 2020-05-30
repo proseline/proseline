@@ -2,7 +2,7 @@ const mail = require('../mail').events
 const server = require('./server')
 const signup = require('./signup')
 const tape = require('tape')
-const verifySignIn = require('./verify-signin')
+const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
 tape('change password', test => {
@@ -21,14 +21,14 @@ tape('change password', test => {
           test.ifError(error, 'no signup error')
           browser.navigateTo('http://localhost:' + port)
             // Navigate to log-in page.
-            .then(() => browser.$('#signin'))
+            .then(() => browser.$('#login'))
             .then(a => a.click())
             // Sign in.
-            .then(() => browser.$('#signinForm input[name="handle"]'))
+            .then(() => browser.$('#loginForm input[name="handle"]'))
             .then(input => input.addValue(handle))
-            .then(() => browser.$('#signinForm input[name="password"]'))
+            .then(() => browser.$('#loginForm input[name="password"]'))
             .then(input => input.addValue(oldPassword))
-            .then(() => browser.$('#signinForm button[type="submit"]'))
+            .then(() => browser.$('#loginForm button[type="submit"]'))
             .then(submit => submit.click())
             // Navigate to password-change page.
             .then(() => browser.$('a=Account'))
@@ -56,18 +56,18 @@ tape('change password', test => {
               test.assert(text.includes('changed'), 'changed')
             })
             // Sign out.
-            .then(() => browser.$('#signout'))
+            .then(() => browser.$('#logout'))
             .then(a => a.click())
-            .then(() => browser.$('#signin'))
+            .then(() => browser.$('#login'))
             .then(a => a.click())
             // Sign in with new password.
-            .then(() => browser.$('#signinForm input[name="handle"]'))
+            .then(() => browser.$('#loginForm input[name="handle"]'))
             .then(input => input.addValue(handle))
-            .then(() => browser.$('#signinForm input[name="password"]'))
+            .then(() => browser.$('#loginForm input[name="password"]'))
             .then(input => input.addValue(newPassword))
-            .then(() => browser.$('#signinForm button[type="submit"]'))
+            .then(() => browser.$('#loginForm button[type="submit"]'))
             .then(submit => submit.click())
-            .then(() => verifySignIn({
+            .then(() => verifyLogIn({
               browser, test, port, handle, email
             }))
             .then(() => {
