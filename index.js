@@ -67,7 +67,8 @@ function nav (request) {
 <nav role=navigation>
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
-  ${handle && !account.subscribed && '<a id=subscribe class=button href=/subscribe>Subscribe</a>'}
+  ${handle && !account.subscriptionID && '<a id=subscribe class=button href=/subscribe>Subscribe</a>'}
+  ${handle && account.subscriptionID && '<a id=unsubscribe class=button href=/unsubscribe>Unsubscribe</a>'}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
@@ -1215,10 +1216,11 @@ function serveSubscribe (request, response) {
         stripe.subscriptions.list({
           customer: customerID,
           plan: process.env.STRIPE_PLAN,
-          status: 'active'
-        }, (error, subscription) => {
+          status: 'active',
+          limit: 1
+        }, (error, subscriptions) => {
           if (error) return done(error)
-          if (subscription) {
+          if (subscriptions) {
             var alreadySubscribed = new Error('already subscribed')
             alreadySubscribed.statusCode = 400
             return done(alreadySubscribed)
@@ -1252,8 +1254,12 @@ function serveSubscribe (request, response) {
           items: [{ plan: process.env.STRIPE_PLAN }]
         }, (error, subscription) => {
           if (error) return done(error)
+          const subscriptionID = subscription.id
           request.log.info({ subscription }, 'created Stripe subscription')
-          done()
+          storage.account.update(handle, { subscriptionID }, error => {
+            if (error) return done(error)
+            done()
+          })
         })
       }
     ], done)
@@ -1287,7 +1293,7 @@ function serveSubscribe (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Sign Up / Proseline</title>
+      <title>Subscribe / Proseline</title>
     </head>
     <body>
       ${header}
@@ -1315,6 +1321,100 @@ function serveSubscribe (request, response) {
 }
 
 function serveUnsubscribe (request, response) {
+  const fields = { }
+
+  formRoute({
+    action: '/unsubscribe',
+    requireAuthentication: true,
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function processBody (request, body, done) {
+    const { handle, customerID } = request.account
+    if (!customerID) {
+      const notSubscribed = new Error('not subscribed')
+      notSubscribed.statusCode = 404
+      return done(notSubscribed)
+    }
+    let subscriptionID
+    runSeries([
+      // Get the active subscription.
+      done => {
+        stripe.subscriptions.list({
+          customer: customerID,
+          plan: process.env.STRIPE_PLAN,
+          status: 'active',
+          limit: 1
+        }, (error, subscriptions) => {
+          if (error) return done(error)
+          subscriptionID = subscriptions.data[0].id
+          done()
+        })
+      },
+
+      // Delete subscription.
+      done => {
+        stripe.subscriptions.del(subscriptionID, (error) => {
+          if (error) return done(error)
+          request.log.info({ subscriptionID }, 'deleted Stripe subscription')
+          storage.account.update(handle, {
+            subscriptionID: undefined
+          }, done)
+        })
+      }
+    ], done)
+  }
+
+  function onSuccess (request, response) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>Unsubscribed / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Unsubscribed</h2>
+      <p class=message>You have successfully unsubscribed from Proseline.</p>
+    </main>
+  </body>
+</html>
+  `)
+  }
+
+  function form (request, data) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
+  <!doctype html>
+  <html lang=en-US>
+    <head>
+      ${meta}
+      <title>Unsubscribe / Proseline</title>
+    </head>
+    <body>
+      ${header}
+      ${nav(request)}
+      <main role=main>
+        <h2>Subscribe</h2>
+        <div id=card></div>
+        <div id=errors></div>
+        <form id=unsubscribeForm method=post>
+          ${data.error}
+          ${data.csrf}
+          <input type=submit value=Unsubscribe>
+        </form>
+      </main>
+    </body>
+  </html>
+    `)
+  }
 }
 
 function serveStripeWebhook (request, response) {

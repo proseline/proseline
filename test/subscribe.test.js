@@ -6,7 +6,7 @@ const timeout = require('./timeout')
 const verifyLogIn = require('./verify-login')
 const webdriver = require('./webdriver')
 
-tape('subscribe', test => {
+tape('subscribe and unsubscribe', test => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
@@ -65,7 +65,23 @@ tape('subscribe', test => {
       .then(element => element.waitForExist({ timeout: 10000 }))
       .then(() => browser.$('.message'))
       .then(element => element.getText())
-      .then(text => test.assert(text.includes('Thank you')))
+      .then(text => test.assert(text.includes('Thank you'), 'subscribed'))
+
+      // Unsubscribe
+      .then(() => browser.navigateTo('http://localhost:' + port))
+      .then(() => browser.$('#unsubscribe'))
+      .then(a => a.click())
+
+      // Submit
+      .then(() => browser.$('input[type="submit"]'))
+      .then(element => element.click())
+
+      // Confirm
+      .then(() => browser.$('.message'))
+      .then(element => element.waitForExist({ timeout: 10000 }))
+      .then(() => browser.$('.message'))
+      .then(element => element.getText())
+      .then(text => test.assert(text.includes('unsubscribed'), 'unsubscribed'))
 
       .then(() => { finish() })
       .catch(error => {
