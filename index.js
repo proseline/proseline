@@ -347,6 +347,8 @@ function serveSignUp (request, response) {
 }
 
 function serveLogIn (request, response) {
+  const title = 'Log In'
+
   const fields = {
     handle: {
       filter: (e) => e.toLowerCase().trim(),
@@ -371,13 +373,13 @@ function serveLogIn (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Log In / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Log In</h2>
+        <h2>${title}</h2>
         <form id=loginForm method=post>
           ${data.error}
           ${data.csrf}
@@ -391,7 +393,7 @@ function serveLogIn (request, response) {
             <input name=password type=password required>
           </p>
           ${data.password.error}
-          <button type=submit>Log In</button>
+          <button type=submit>${title}</button>
         </form>
         <a href=/handle>Forgot Handle</a>
         <a href=/reset>Reset Password</a>
@@ -549,6 +551,8 @@ function serveAccount (request, response) {
 }
 
 function serveHandle (request, response) {
+  const title = 'Forgot Handle'
+
   const fields = {
     email: {
       filter: (e) => e.toLowerCase().trim(),
@@ -570,7 +574,7 @@ function serveHandle (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Forgot Handle / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
@@ -633,6 +637,8 @@ function serveHandle (request, response) {
 }
 
 function serveEMail (request, response) {
+  const title = 'Change E-Mail'
+
   const fields = {
     email: {
       filter: (e) => e.toLowerCase().trim(),
@@ -655,7 +661,7 @@ function serveEMail (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Change E-Mail / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
@@ -667,7 +673,7 @@ function serveEMail (request, response) {
           ${data.csrf}
           ${eMailInput({ autofocus: true })}
           ${data.email.error}
-          <button type=submit>Change E-Mail</button>
+          <button type=submit>${title}</button>
         </form>
       </main>
     </body>
@@ -682,7 +688,7 @@ function serveEMail (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Change E-Mail / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
@@ -745,6 +751,7 @@ function getAuthenticated (request, response) {
     response.end()
     return
   }
+  const title = 'Change Password'
   const message = request.parsed.query.message
   const messageParagraph = message
     ? `<p class=message>${escapeHTML(message)}</p>`
@@ -755,13 +762,13 @@ function getAuthenticated (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Password / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>Change Password</h2>
+      <h2>${title}</h2>
       ${messageParagraph}
       <form id=passwordForm method=post>
         ${csrf.inputs({
@@ -774,7 +781,7 @@ function getAuthenticated (request, response) {
         </p>
         ${passwordInput({ label: 'New Password' })}
         ${passwordRepeatInput()}
-        <button type=submit>Change Password</button>
+        <button type=submit>${title}</button>
       </form>
     </main>
   </body>
@@ -794,6 +801,7 @@ function getWithToken (request, response) {
       response.statusCode = 400
       return response.end()
     }
+    const title = 'Change Password'
     const message = request.parsed.query.message || error
     const messageParagraph = message
       ? `<p class=message>${escapeHTML(message)}</p>`
@@ -804,13 +812,13 @@ function getWithToken (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Password / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>Change Password</h2>
+      <h2>${title}</h2>
       ${messageParagraph}
       <form id=passwordForm method=post>
         ${csrf.inputs({
@@ -823,7 +831,7 @@ function getWithToken (request, response) {
           autofocus: true
         })}
         ${passwordRepeatInput()}
-        <button type=submit>Change Password</button>
+        <button type=submit>${title}</button>
       </form>
     </main>
   </body>
@@ -833,6 +841,7 @@ function getWithToken (request, response) {
 }
 
 function invalidToken (request, response) {
+  const title = 'Change Password'
   response.statusCode = 400
   response.setHeader('Content-Type', 'text/html')
   return response.end(html`
@@ -840,13 +849,13 @@ function invalidToken (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Password / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>Change Password</h2>
+      <h2>${title}</h2>
       <p class=message>The link you followed is invalid or expired.</p>
     </main>
   </body>
@@ -877,19 +886,20 @@ function postPassword (request, response) {
       response.statusCode = error.statusCode || 500
       return response.end()
     }
+    const title = 'Change Password'
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Password / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>Change Password</h2>
+      <h2>${title}</h2>
       <p class=message>Password changed.</p>
     </main>
   </body>
@@ -1011,6 +1021,8 @@ function postPassword (request, response) {
 }
 
 function serveReset (request, response) {
+  const title = 'Reset Password'
+
   const fields = {
     handle: {
       validate: handles.valid
@@ -1031,13 +1043,13 @@ function serveReset (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Reset / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Reset Password</h2>
+        <h2>${title}</h2>
         <form id=resetForm method=post>
           ${data.error}
           ${data.csrf}
@@ -1094,7 +1106,7 @@ function serveReset (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Reset / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
@@ -1151,19 +1163,20 @@ function serveConfirm (request, response) {
           done => storage.email.write(email, handle, done)
         ], error => {
           if (error) return serve500(request, response, error)
+          const title = 'E-Mail Change'
           response.setHeader('Content-Type', 'text/html')
           response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
     ${meta}
-    <title>E-Mail Change / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>E-Mail Change</h2>
+      <h2>${title}</h2>
       <p class=message>The e-mail address for your account was successfully changed.</p>
     </main>
   </body>
@@ -1176,6 +1189,8 @@ function serveConfirm (request, response) {
 }
 
 function serveSubscribe (request, response) {
+  const title = 'Subscribe'
+
   const fields = {
     paymentMethodID: { validate: e => e.length > 0 }
   }
@@ -1295,7 +1310,7 @@ function serveSubscribe (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Subscribe / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
@@ -1308,7 +1323,7 @@ function serveSubscribe (request, response) {
           ${data.error}
           ${data.csrf}
           <input type=hidden name=paymentMethodID>
-          <input type=submit value=Subscribe>
+          <button type=submit>${title}</button>
         </form>
       </main>
       <script src=https://js.stripe.com/v3/></script>
@@ -1323,6 +1338,8 @@ function serveSubscribe (request, response) {
 }
 
 function serveUnsubscribe (request, response) {
+  const title = 'Unsubscribe'
+
   const fields = { }
 
   formRoute({
@@ -1398,19 +1415,19 @@ function serveUnsubscribe (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Unsubscribe / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Subscribe</h2>
+        <h2>${title}</h2>
         <div id=card></div>
         <div id=errors></div>
         <form id=unsubscribeForm method=post>
           ${data.error}
           ${data.csrf}
-          <input type=submit value=Unsubscribe>
+          <button type=submit>${title}</button>
         </form>
       </main>
     </body>
