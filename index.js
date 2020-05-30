@@ -1466,7 +1466,7 @@ function serveStripeWebhook (request, response) {
 function setCookie (response, value, expires) {
   response.setHeader(
     'Set-Cookie',
-    cookie.serialize('commonform', value, {
+    cookie.serialize('proseline', value, {
       expires,
       httpOnly: true,
       sameSite: 'lax',
@@ -1750,7 +1750,7 @@ function authenticate (request, response, handler) {
     return proceed()
   }
   const parsed = cookie.parse(header)
-  const sessionID = parsed.commonform
+  const sessionID = parsed.proseline
   if (!sessionID) {
     createGuestSession()
     return proceed()
