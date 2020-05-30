@@ -3,6 +3,16 @@
 const logger = require('pino')()
 const addLoggers = require('pino-http')({ logger })
 
+// Environment
+
+const missing = require('./check-environment')()
+if (missing.length !== 0) {
+  missing.forEach(missing => {
+    logger.error({ variable: missing }, 'missing environment variable')
+  })
+  process.exit(1)
+}
+
 // Error Handling
 
 process

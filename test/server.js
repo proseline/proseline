@@ -31,6 +31,14 @@ module.exports = callback => {
       const port = this.address().port
       process.env.BASE_HREF = 'http://localhost:' + port
       process.env.ADMIN_EMAIL = 'admin@example.com'
+      const missing = require('../check-environment')()
+      if (missing.length !== 0) {
+        cleanup()
+        missing.forEach(missing => {
+          console(`Missing environment variable: ${missing}`)
+        })
+        assert(false)
+      }
       callback(port, cleanup)
     })
   })

@@ -17,7 +17,10 @@ tape('server', test => {
             NODE_ENV: 'test',
             BASE_HREF: 'http://localhost:' + serverPort + '/',
             CSRF_KEY: csrf.randomKey(),
-            DIRECTORY: directory
+            DIRECTORY: directory,
+            STRIPE_PLAN: process.env.STRIPE_PLAN,
+            STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
+            STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY
           }
         })
         server.stdout.once('data', () => {
