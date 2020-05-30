@@ -166,6 +166,8 @@ const passwords = (() => {
 })()
 
 function serveSignUp (request, response) {
+  const title = 'Sign Up'
+
   const fields = {
     email: {
       filter: e => e.toLowerCase().trim(),
@@ -283,7 +285,7 @@ function serveSignUp (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Sign Up / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
@@ -304,13 +306,13 @@ function serveSignUp (request, response) {
   <html lang=en-US>
     <head>
       ${meta}
-      <title>Sign Up / Proseline</title>
+      <title>${title} / Proseline</title>
     </head>
     <body>
       ${header}
       ${nav(request)}
       <main role=main>
-        <h2>Sign Up</h2>
+        <h2>${title}</h2>
         <form id=signupForm method=post>
           ${data.error}
           ${data.csrf}
@@ -335,7 +337,7 @@ function serveSignUp (request, response) {
           ${data.password.error}
           ${passwordRepeatInput()}
           ${data.repeat.error}
-          <button type=submit>Join</button>
+          <button type=submit>${title}</button>
         </form>
       </main>
     </body>
@@ -534,8 +536,8 @@ function serveAccount (request, response) {
           <td class=email>${escape(account.email)}</td>
         </tr>
         <tr>
-          <th>Joined</th>
-          <td class=joined>${escape(new Date(account.created).toISOString())}</td>
+          <th>signed Up</th>
+          <td class=signedup>${escape(new Date(account.created).toISOString())}</td>
         </tr>
       </table>
       <a class=button href=/password>Change Password</a>
