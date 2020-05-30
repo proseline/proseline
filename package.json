@@ -7,7 +7,7 @@
     "do-not-cache": "^1.0.1",
     "escape-html": "^1.0.3",
     "lock": "^1.1.0",
-    "nodemailer": "^6.4.6",
+    "nodemailer": "^6.4.8",
     "pino": "^6.3.0",
     "pino-http": "^5.2.0",
     "run-parallel": "^1.1.9",
