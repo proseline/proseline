@@ -28,8 +28,9 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     if (pathname === '/') return serveIndex(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
-    if (pathname === '/client.js') return serveClient(request, response)
-    if (pathname === '/subscribe.js') return serveSubscribeScript(request, response)
+    if (pathname === '/client.js') return serveScript(request, response)
+    if (pathname === '/subscribe.js') return serveScript(request, response)
+    if (pathname === '/authenticate.js') return serveScript(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
@@ -116,14 +117,9 @@ function serveStyles (request, response) {
   fs.createReadStream(file).pipe(response)
 }
 
-function serveClient (request, response) {
-  const file = path.join(__dirname, 'client.js')
-  response.setHeader('Content-Type', 'text/javascript')
-  fs.createReadStream(file).pipe(response)
-}
-
-function serveSubscribeScript (request, response) {
-  const file = path.join(__dirname, 'subscribe.js')
+function serveScript (request, response) {
+  const basename = path.basename(request.parsed.pathname)
+  const file = path.join(__dirname, basename)
   response.setHeader('Content-Type', 'text/javascript')
   fs.createReadStream(file).pipe(response)
 }
@@ -1208,6 +1204,7 @@ function serveSubscribe (request, response) {
     const { email, handle } = request.account
     const alreadyCustomer = Boolean(request.account.customerID)
     let customerID
+    const toForm = {}
     runSeries([
       // Create a customer if needed.
       done => {
@@ -1268,23 +1265,41 @@ function serveSubscribe (request, response) {
       done => {
         stripe.subscriptions.create({
           customer: customerID,
-          items: [{ plan: process.env.STRIPE_PLAN }]
+          items: [{ plan: process.env.STRIPE_PLAN }],
+          expand: ['latest_invoice.payment_intent']
         }, (error, subscription) => {
           if (error) return done(error)
           const subscriptionID = subscription.id
           request.log.info({ subscription }, 'created Stripe subscription')
-          storage.account.update(handle, { subscriptionID }, error => {
-            if (error) return done(error)
-            done()
-          })
+          const paymentIntent = subscription.latest_invoice.payment_intent
+          const status = paymentIntent.status
+          toForm.status = status
+          request.log.info({ status }, 'Stripe payment status')
+          if (status === 'succeeded') {
+            return storage.account.update(handle, { subscriptionID }, error => {
+              if (error) return done(error)
+              done()
+            })
+          } else if (status === 'requires_action') {
+            toForm.clientSecret = paymentIntent.client_secret
+            toForm.paymentMethodID = body.paymentMethodID
+            return done()
+          }
+          var unknownStatus = new Error('unknown payment status')
+          unknownStatus.status = status
+          return done(unknownStatus)
         })
       }
-    ], done)
+    ], error => {
+      if (error) return done(error)
+      done(null, toForm)
+    })
   }
 
-  function onSuccess (request, response) {
-    response.setHeader('Content-Type', 'text/html')
-    response.end(html`
+  function onSuccess (request, response, body, options) {
+    if (options.status === 'succeeded') {
+      response.setHeader('Content-Type', 'text/html')
+      response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -1300,7 +1315,34 @@ function serveSubscribe (request, response) {
     </main>
   </body>
 </html>
-  `)
+    `)
+    } else {
+      response.setHeader('Content-Type', 'text/html')
+      response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main id=main role=main>
+      <h2>${title}</h2>
+      <p class=message>Your payment method requires an extra step.</p>
+    </main>
+  </body>
+  <script src=https://js.stripe.com/v3/></script>
+  <script>
+    window.STRIPE_PUBLISHABLE_KEY = ${JSON.stringify(process.env.STRIPE_PUBLISHABLE_KEY)}
+    window.clientSecret = ${JSON.stringify(options.clientSecret)}
+    window.paymentMethodID = ${JSON.stringify(options.paymentMethodID)}
+  </script>
+  <script src=/authenticate.js></script>
+</html>
+    `)
+    }
   }
 
   function form (request, data) {
