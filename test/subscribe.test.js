@@ -57,7 +57,7 @@ tape('subscribe and unsubscribe', test => {
       .then(() => browser.switchToParentFrame())
 
       // Submit
-      .then(() => browser.$('input[type="submit"]'))
+      .then(() => browser.$('#subscribeForm button[type="submit"]'))
       .then(element => element.click())
 
       // Confirm
@@ -73,7 +73,7 @@ tape('subscribe and unsubscribe', test => {
       .then(a => a.click())
 
       // Submit
-      .then(() => browser.$('input[type="submit"]'))
+      .then(() => browser.$('#unsubscribeForm button[type="submit"]'))
       .then(element => element.click())
 
       // Confirm
