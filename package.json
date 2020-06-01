@@ -6,7 +6,6 @@
     "cookie": "^0.4.1",
     "do-not-cache": "^1.0.1",
     "escape-html": "^1.0.3",
-    "json-parse-errback": "^2.0.1",
     "lock": "^1.1.0",
     "nodemailer": "^6.4.8",
     "pino": "^6.3.0",
@@ -14,7 +13,7 @@
     "run-parallel": "^1.1.9",
     "run-series": "^1.1.8",
     "secure-password": "^4.0.0",
-    "simple-concat-limit": "^2.0.0",
+    "simple-concat-limit": "^2.0.1",
     "stripe": "^8.56.0",
     "url-parse": "^1.4.7",
     "uuid": "^8.1.0"

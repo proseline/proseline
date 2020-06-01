@@ -4,7 +4,8 @@ module.exports = () => {
     'CSRF_KEY',
     'STRIPE_PLAN',
     'STRIPE_PUBLISHABLE_KEY',
-    'STRIPE_SECRET_KEY'
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET'
   ]
   const missing = []
   requiredEnvironmentVariables.forEach(key => {
