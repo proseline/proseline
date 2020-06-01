@@ -312,46 +312,46 @@ function serveSignUp (request, response) {
   function form (request, data) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>${title}</h2>
-        <form id=signupForm method=post>
-          ${data.error}
-          ${data.csrf}
-          ${eMailInput({
-            autofocus: true,
-            value: data.email.value
-          })}
-          ${data.email.error}
-          <p>
-            <label for=handle>Handle</label>
-            <input
-                name=handle
-                type=text
-                pattern="${handles.pattern}"
-                value="${escapeHTML(data.handle.value)}"
-                autofocus
-                required>
-          </p>
-          ${data.handle.error}
-          <p>${handles.html}</p>
-          ${passwordInput({})}
-          ${data.password.error}
-          ${passwordRepeatInput()}
-          ${data.repeat.error}
-          <button type=submit>${title}</button>
-        </form>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <form id=signupForm method=post>
+        ${data.error}
+        ${data.csrf}
+        ${eMailInput({
+          autofocus: true,
+          value: data.email.value
+        })}
+        ${data.email.error}
+        <p>
+          <label for=handle>Handle</label>
+          <input
+              name=handle
+              type=text
+              pattern="${handles.pattern}"
+              value="${escapeHTML(data.handle.value)}"
+              autofocus
+              required>
+        </p>
+        ${data.handle.error}
+        <p>${handles.html}</p>
+        ${passwordInput({})}
+        ${data.password.error}
+        ${passwordRepeatInput()}
+        ${data.repeat.error}
+        <button type=submit>${title}</button>
+      </form>
+    </main>
+  </body>
+</html>
     `)
   }
 }
@@ -379,37 +379,37 @@ function serveLogIn (request, response) {
 
   function form (request, data) {
     return html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>${title}</h2>
-        <form id=loginForm method=post>
-          ${data.error}
-          ${data.csrf}
-          <p>
-            <label for=handle>Handle</label>
-            <input name=handle type=text required autofocus>
-          </p>
-          ${data.handle.error}
-          <p>
-            <label for=password>Password</label>
-            <input name=password type=password required>
-          </p>
-          ${data.password.error}
-          <button type=submit>${title}</button>
-        </form>
-        <a href=/handle>Forgot Handle</a>
-        <a href=/reset>Reset Password</a>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <form id=loginForm method=post>
+        ${data.error}
+        ${data.csrf}
+        <p>
+          <label for=handle>Handle</label>
+          <input name=handle type=text required autofocus>
+        </p>
+        ${data.handle.error}
+        <p>
+          <label for=password>Password</label>
+          <input name=password type=password required>
+        </p>
+        ${data.password.error}
+        <button type=submit>${title}</button>
+      </form>
+      <a href=/handle>Forgot Handle</a>
+      <a href=/reset>Reset Password</a>
+    </main>
+  </body>
+</html>
     `
   }
 
@@ -667,48 +667,48 @@ function serveEMail (request, response) {
 
   function form (request, data) {
     return html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>Change E-Mail</h2>
-        <form id=emailForm method=post>
-          ${data.error}
-          ${data.csrf}
-          ${eMailInput({ autofocus: true })}
-          ${data.email.error}
-          <button type=submit>${title}</button>
-        </form>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Change E-Mail</h2>
+      <form id=emailForm method=post>
+        ${data.error}
+        ${data.csrf}
+        ${eMailInput({ autofocus: true })}
+        ${data.email.error}
+        <button type=submit>${title}</button>
+      </form>
+    </main>
+  </body>
+</html>
     `
   }
 
   function onSuccess (request, response, body) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>Change E-Mail</h2>
-        <p class=message>Confirmation e-mail sent.</p>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Change E-Mail</h2>
+      <p class=message>Confirmation e-mail sent.</p>
+    </main>
+  </body>
+</html>
     `)
   }
 
@@ -1049,37 +1049,37 @@ function serveReset (request, response) {
 
   function form (request, data) {
     return html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>${title}</h2>
-        <form id=resetForm method=post>
-          ${data.error}
-          ${data.csrf}
-          <p>
-            <label for=handle>Handle</label>
-            <input
-                name=handle
-                value="${escapeHTML(data.handle.value)}"
-                type=text
-                pattern="${escapeHTML(handles.pattern)}"
-                required
-                autofocus
-                autocomplete=off>
-          </p>
-          ${data.handle.error}
-          <button type=submit>Send E-Mail</button>
-        </form>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <form id=resetForm method=post>
+        ${data.error}
+        ${data.csrf}
+        <p>
+          <label for=handle>Handle</label>
+          <input
+              name=handle
+              value="${escapeHTML(data.handle.value)}"
+              type=text
+              pattern="${escapeHTML(handles.pattern)}"
+              required
+              autofocus
+              autocomplete=off>
+        </p>
+        ${data.handle.error}
+        <button type=submit>Send E-Mail</button>
+      </form>
+    </main>
+  </body>
+</html>
     `
   }
 
@@ -1112,20 +1112,20 @@ function serveReset (request, response) {
   function onSuccess (request, response) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      <main role=main>
-        <h2>Reset Password</h2>
-        <p class=message>An e-mail has been sent.</p>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    <main role=main>
+      <h2>Reset Password</h2>
+      <p class=message>An e-mail has been sent.</p>
+    </main>
+  </body>
+</html>
     `)
   }
 }
@@ -1304,26 +1304,26 @@ function serveSubscribe (request, response) {
   function form (request, data) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>Subscribe</h2>
-        <div id=card></div>
-        <div id=errors></div>
-        <form id=subscribeForm method=post>
-          ${data.csrf}
-          <button type=submit>${title}</button>
-        </form>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>Subscribe</h2>
+      <div id=card></div>
+      <div id=errors></div>
+      <form id=subscribeForm method=post>
+        ${data.csrf}
+        <button type=submit>${title}</button>
+      </form>
+    </main>
+  </body>
+</html>
     `)
   }
 }
@@ -1424,27 +1424,27 @@ function serveUnsubscribe (request, response) {
   function form (request, data) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
-  <!doctype html>
-  <html lang=en-US>
-    <head>
-      ${meta}
-      <title>${title} / Proseline</title>
-    </head>
-    <body>
-      ${header}
-      ${nav(request)}
-      <main role=main>
-        <h2>${title}</h2>
-        <div id=card></div>
-        <div id=errors></div>
-        <form id=unsubscribeForm method=post>
-          ${data.error}
-          ${data.csrf}
-          <button type=submit>${title}</button>
-        </form>
-      </main>
-    </body>
-  </html>
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <div id=card></div>
+      <div id=errors></div>
+      <form id=unsubscribeForm method=post>
+        ${data.error}
+        ${data.csrf}
+        <button type=submit>${title}</button>
+      </form>
+    </main>
+  </body>
+</html>
     `)
   }
 }
@@ -1472,9 +1472,7 @@ function serveStripeWebhook (request, response) {
 
     const type = event.type
     if (type === 'checkout.session.completed') {
-      const object = event.data.object
-      const customerID = object.customer
-      const subscriptionID = object.subscription
+      const { customerID, subscriptionID } = event.data.object
       request.log.info({
         customerID, subscriptionID
       }, 'Stripe Checkout completed')
