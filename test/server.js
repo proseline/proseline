@@ -41,9 +41,19 @@ module.exports = callback => {
         })
         assert(false)
       }
+      const events = [
+        'checkout.session.completed',
+        'customer.subscription.deleted'
+      ]
       stripeCLI = spawn(
         'stripe',
-        ['listen', '--forward-to', `localhost:${port}/stripe-webhook`]
+        [
+          'listen',
+          '--forward-to',
+          `localhost:${port}/stripe-webhook`,
+          '--events',
+          events.join(',')
+        ]
       )
       stripeCLI.stdout.once('data', () => {
         callback(port, cleanup)
