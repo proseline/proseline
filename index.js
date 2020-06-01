@@ -41,7 +41,7 @@ module.exports = (request, response) => {
     if (pathname === '/confirm') return serveConfirm(request, response)
     if (pathname === '/subscribe') return serveSubscribe(request, response)
     if (pathname === '/subscribed') return serveSubscribed(request, response)
-    if (pathname === '/unsubscribe') return serveUnsubscribe(request, response)
+    if (pathname === '/subscription') return serveSubscription(request, response)
     if (pathname === '/stripe-webhook') return serveStripeWebhook(request, response)
     if (pathname === '/internal-error' && !inProduction) {
       const testError = new Error('test error')
@@ -69,7 +69,7 @@ function nav (request) {
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && !account.subscriptionID && subscribeButton(request)}
-  ${handle && account.subscriptionID && '<a id=unsubscribe class=button href=/unsubscribe>Unsubscribe</a>'}
+  ${handle && account.subscriptionID && subscriptionButton(request)}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
@@ -90,6 +90,19 @@ function subscribeButton (request) {
   `
 }
 
+function subscriptionButton (request) {
+  const action = '/subscription'
+  const csrfInputs = csrf.inputs({
+    action,
+    sessionID: request.session.id
+  })
+  return html`
+<form action=${action} method=post>
+  ${csrfInputs}
+  <button id=subscription type=submit>Subscription</button>
+</form>
+  `
+}
 function logoutButton (request) {
   const csrfInputs = csrf.inputs({
     action: '/logout',
@@ -1350,13 +1363,13 @@ function serveSubscribed (request, response) {
   `)
 }
 
-function serveUnsubscribe (request, response) {
-  const title = 'Unsubscribe'
+function serveSubscription (request, response) {
+  const title = 'Subscription'
 
   const fields = { }
 
   formRoute({
-    action: '/unsubscribe',
+    action: '/subscription',
     requireAuthentication: true,
     form,
     fields,
@@ -1365,60 +1378,22 @@ function serveUnsubscribe (request, response) {
   })(request, response)
 
   function processBody (request, body, done) {
-    const { handle, customerID } = request.account
+    const { customerID } = request.account
     if (!customerID) {
       const notSubscribed = new Error('not subscribed')
       notSubscribed.statusCode = 404
       return done(notSubscribed)
     }
-    let subscriptionID
-    runSeries([
-      // Get the active subscription.
-      done => {
-        stripe.subscriptions.list({
-          customer: customerID,
-          plan: process.env.STRIPE_PLAN,
-          status: 'active',
-          limit: 1
-        }, (error, subscriptions) => {
-          if (error) return done(error)
-          subscriptionID = subscriptions.data[0].id
-          done()
-        })
-      },
-
-      // Delete subscription.
-      done => {
-        stripe.subscriptions.del(subscriptionID, (error) => {
-          if (error) return done(error)
-          request.log.info({ subscriptionID }, 'deleted Stripe subscription')
-          storage.account.update(handle, {
-            subscriptionID: undefined
-          }, done)
-        })
-      }
-    ], done)
+    stripe.billingPortal.sessions.create({
+      customer: customerID,
+      return_url: `${process.env.BASE_HREF}/`
+    }, done)
   }
 
-  function onSuccess (request, response) {
-    response.setHeader('Content-Type', 'text/html')
-    response.end(html`
-<!doctype html>
-<html lang=en-US>
-  <head>
-    ${meta}
-    <title>Unsubscribed / Proseline</title>
-  </head>
-  <body>
-    ${header}
-    ${nav(request)}
-    <main role=main>
-      <h2>Unsubscribed</h2>
-      <p class=message>You have successfully unsubscribed from Proseline.</p>
-    </main>
-  </body>
-</html>
-  `)
+  function onSuccess (request, response, body, session) {
+    response.statusCode = 303
+    response.setHeader('Location', session.url)
+    response.end()
   }
 
   function form (request, data) {
@@ -1472,7 +1447,9 @@ function serveStripeWebhook (request, response) {
 
     const type = event.type
     if (type === 'checkout.session.completed') {
-      const { customerID, subscriptionID } = event.data.object
+      const object = event.data.object
+      const customerID = object.customer
+      const subscriptionID = object.subscription
       request.log.info({
         customerID, subscriptionID
       }, 'Stripe Checkout completed')
@@ -1489,10 +1466,12 @@ function serveStripeWebhook (request, response) {
         )
       })
     } else if (type === 'customer.subscription.deleted') {
-      const { subscriptionID, customerID } = event.data.object
+      const subscription = event.data.object
+      const subscriptionID = subscription.id
+      const customerID = subscription.customer
       request.log.info({
         customerID, subscriptionID
-      }, 'Stripe subscription deleted')
+      }, 'Stripe subscription canceled')
       stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
         const handle = customer.metadata.handle

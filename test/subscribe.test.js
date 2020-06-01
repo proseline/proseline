@@ -59,26 +59,33 @@ tape('subscribe and unsubscribe', test => {
 
       // Confirm
       .then(() => browser.$('.message'))
-      .then(element => element.waitForExist({ timeout: 10000 }))
+      .then(element => element.waitForExist({ timeout: 20000 }))
       .then(() => browser.$('.message'))
       .then(element => element.getText())
       .then(text => test.assert(text.includes('Thank you'), 'subscribed'))
 
       // Unsubscribe
       .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#unsubscribe'))
+      .then(() => browser.$('#subscription'))
       .then(a => a.click())
 
-      // Submit
-      .then(() => browser.$('#unsubscribeForm button[type="submit"]'))
-      .then(element => element.click())
-
       // Confirm
-      .then(() => browser.$('.message'))
+      .then(() => browser.$('button[data-test="cancel-subscription"]'))
+      .then(button => button.click())
+      .then(() => browser.$('button[data-test="confirm"]'))
+      .then(button => button.click())
+      .then(() => browser.$('span=No current plans.'))
       .then(element => element.waitForExist({ timeout: 10000 }))
-      .then(() => browser.$('.message'))
-      .then(element => element.getText())
-      .then(text => test.assert(text.includes('unsubscribed'), 'unsubscribed'))
+      .then(() => browser.$('span=No current plans.'))
+      .then(element => element.isExisting())
+      .then(existing => test.assert(existing, 'canceled plan'))
+
+      .then(() => browser.navigateTo('http://localhost:' + port))
+      .then(() => browser.$('#subscribe'))
+      .then(element => element.waitForExist({ timeout: 10000 }))
+      .then(() => browser.$('#subscribe'))
+      .then(element => element.isExisting())
+      .then(existing => test.assert(existing, 'no longer subscribed'))
 
       .then(() => { finish() })
       .catch(error => {
