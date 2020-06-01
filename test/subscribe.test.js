@@ -10,91 +10,87 @@ tape('subscribe and unsubscribe', test => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  server((port, done) => {
-    let browser, cardNumber
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => new Promise((resolve, reject) => {
-        signup({
-          browser, port, handle, password, email
-        }, error => {
-          if (error) return reject(error)
-          resolve()
-        })
-      }))
-      .then(() => login({ browser, port, handle, password }))
-      .then(() => verifyLogIn({ browser, port, test, handle, email }))
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#subscribe'))
-      .then(a => a.click())
+  server(async (port, done) => {
+    const browser = await webdriver()
 
-      // Enter Payment Details
-      .then(() => browser.$('#cardNumber'))
-      .then(input => { cardNumber = input })
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => timeout(200))
-      .then(() => cardNumber.addValue('42'))
-      .then(() => browser.$('#cardExpiry'))
-      .then(input => input.setValue('10 / 31'))
-      .then(() => browser.$('#cardCvc'))
-      .then(input => input.setValue('123'))
-      .then(() => browser.$('#billingName'))
-      .then(input => input.setValue('Joe Customer'))
-      .then(() => browser.$('#billingPostalCode'))
-      .then(input => input.setValue('12345'))
-      .then(() => browser.$('button[type=submit]'))
-      .then(button => button.click())
-
-      // Confirm
-      .then(() => browser.$('.message'))
-      .then(element => element.waitForExist({ timeout: 20000 }))
-      .then(() => browser.$('.message'))
-      .then(element => element.getText())
-      .then(text => test.assert(text.includes('Thank you'), 'subscribed'))
-
-      // Unsubscribe
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#subscription'))
-      .then(a => a.click())
-
-      // Confirm
-      .then(() => browser.$('button[data-test="cancel-subscription"]'))
-      .then(button => button.click())
-      .then(() => browser.$('button[data-test="confirm"]'))
-      .then(button => button.click())
-      .then(() => browser.$('span=No current plans.'))
-      .then(element => element.waitForExist({ timeout: 10000 }))
-      .then(() => browser.$('span=No current plans.'))
-      .then(element => element.isExisting())
-      .then(existing => test.assert(existing, 'canceled plan'))
-
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#subscribe'))
-      .then(element => element.waitForExist({ timeout: 10000 }))
-      .then(() => browser.$('#subscribe'))
-      .then(element => element.isExisting())
-      .then(existing => test.assert(existing, 'no longer subscribed'))
-
-      .then(() => { finish() })
-      .catch(error => {
-        test.fail(error)
-        finish()
+    await new Promise((resolve, reject) => {
+      signup({
+        browser, port, handle, password, email
+      }, error => {
+        if (error) return reject(error)
+        resolve()
       })
-    function finish () {
-      test.end()
-      done()
-    }
+    })
+    await login({ browser, port, handle, password })
+    await verifyLogIn({ browser, port, test, handle, email })
+
+    await browser.navigateTo('http://localhost:' + port)
+    const subscribe = await browser.$('#subscribe')
+    await subscribe.click()
+
+    // Enter Payment Details
+    const cardNumber = await browser.$('#cardNumber')
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+    await timeout(200)
+    await cardNumber.addValue('42')
+
+    const expiry = await browser.$('#cardExpiry')
+    await expiry.setValue('10 / 31')
+
+    const cvc = await browser.$('#cardCvc')
+    await cvc.setValue('123')
+
+    const name = await browser.$('#billingName')
+    await name.setValue('Joe Customer')
+
+    const zip = await browser.$('#billingPostalCode')
+    await zip.setValue('12345')
+
+    const submit = await browser.$('button[type=submit]')
+    await submit.click()
+
+    // Confirm
+    const message = await browser.$('.message')
+    await message.waitForExist({ timeout: 20000 })
+    const messageText = await message.getText()
+    test.assert(messageText.includes('Thank you'), 'subscribed')
+
+    // Unsubscribe
+    await browser.navigateTo('http://localhost:' + port)
+    const subscription = await browser.$('#subscription')
+    await subscription.click()
+
+    // Confirm
+    const cancel = await browser.$('button[data-test="cancel-subscription"]')
+    await cancel.click()
+
+    const confirm = await browser.$('button[data-test="confirm"]')
+    await confirm.click()
+
+    const noPlan = await browser.$('span=No current plans.')
+    await noPlan.waitForExist({ timeout: 10000 })
+    const canceled = await noPlan.isExisting()
+    test.assert(canceled, 'canceled plan')
+
+    await browser.navigateTo('http://localhost:' + port)
+    const subscribeAgain = await browser.$('#subscribe')
+    await subscribeAgain.waitForExist({ timeout: 10000 })
+    const notSubscribed = await subscribeAgain.isExisting()
+    test.assert(notSubscribed, 'no longer subscribed')
+
+    test.end()
+    done()
   })
 })
