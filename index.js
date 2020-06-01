@@ -1490,6 +1490,23 @@ function serveStripeWebhook (request, response) {
           }
         )
       })
+    } else if (type === 'customer.subscription.deleted') {
+      const { subscriptionID, customerID } = event.data.object
+      request.log.info({
+        customerID, subscriptionID
+      }, 'Stripe subscription deleted')
+      stripe.customers.retrieve(customerID, (error, customer) => {
+        if (error) return fail(error)
+        const handle = customer.metadata.handle
+        return storage.account.update(
+          handle, { subscriptionID: undefined },
+          error => {
+            if (error) return fail(error)
+            response.statusCode = 200
+            response.end()
+          }
+        )
+      })
     }
 
     response.statusCode = 400
