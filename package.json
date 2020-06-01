@@ -8,7 +8,7 @@
     "escape-html": "^1.0.3",
     "lock": "^1.1.0",
     "nodemailer": "^6.4.8",
-    "pino": "^6.3.0",
+    "pino": "^6.3.1",
     "pino-http": "^5.2.0",
     "run-parallel": "^1.1.9",
     "run-series": "^1.1.8",
