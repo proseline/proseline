@@ -29,9 +29,7 @@ tape('subscribe and unsubscribe', test => {
       .then(a => a.click())
 
       // Enter Payment Details
-      .then(() => browser.$('iframe'))
-      .then(frame => browser.switchToFrame(frame))
-      .then(() => browser.$('input[name="cardnumber"]'))
+      .then(() => browser.$('#cardNumber'))
       .then(input => { cardNumber = input })
       .then(() => cardNumber.addValue('42'))
       .then(() => timeout(200))
@@ -48,17 +46,16 @@ tape('subscribe and unsubscribe', test => {
       .then(() => cardNumber.addValue('42'))
       .then(() => timeout(200))
       .then(() => cardNumber.addValue('42'))
-      .then(() => browser.$('input[name="exp-date"]'))
+      .then(() => browser.$('#cardExpiry'))
       .then(input => input.setValue('10 / 31'))
-      .then(() => browser.$('input[name="cvc"]'))
+      .then(() => browser.$('#cardCvc'))
       .then(input => input.setValue('123'))
-      .then(() => browser.$('input[name="postal"]'))
+      .then(() => browser.$('#billingName'))
+      .then(input => input.setValue('Joe Customer'))
+      .then(() => browser.$('#billingPostalCode'))
       .then(input => input.setValue('12345'))
-      .then(() => browser.switchToParentFrame())
-
-      // Submit
-      .then(() => browser.$('#subscribeForm button[type="submit"]'))
-      .then(element => element.click())
+      .then(() => browser.$('button[type=submit]'))
+      .then(button => button.click())
 
       // Confirm
       .then(() => browser.$('.message'))

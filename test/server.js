@@ -8,6 +8,7 @@ const path = require('path')
 const pino = require('pino')
 const pinoHTTP = require('pino-http')
 const rimraf = require('rimraf')
+const spawn = require('child_process').spawn
 
 module.exports = callback => {
   assert(typeof callback === 'function')
@@ -16,6 +17,7 @@ module.exports = callback => {
   process.env.CSRF_KEY = csrf.randomKey()
   let directory
   let webServer
+  let stripeCLI
   fs.mkdtemp(path.join(os.tmpdir(), 'proseline-'), (error, tmp) => {
     if (error) {
       cleanup()
@@ -35,16 +37,23 @@ module.exports = callback => {
       if (missing.length !== 0) {
         cleanup()
         missing.forEach(missing => {
-          console(`Missing environment variable: ${missing}`)
+          console.error(`Missing environment variable: ${missing}`)
         })
         assert(false)
       }
-      callback(port, cleanup)
+      stripeCLI = spawn(
+        'stripe',
+        ['listen', '--forward-to', `localhost:${port}/stripe-webhook`]
+      )
+      stripeCLI.stdout.once('data', () => {
+        callback(port, cleanup)
+      })
     })
   })
 
   function cleanup () {
     if (webServer) webServer.close()
     if (directory) rimraf(directory, () => {})
+    if (stripeCLI) stripeCLI.kill()
   }
 }

@@ -8,7 +8,6 @@ const hashPassword = require('./hash-password')
 const html = require('./html')
 const mail = require('./mail')
 const notify = require('./notify')
-const parseJSON = require('json-parse-errback')
 const parseURL = require('url-parse')
 const path = require('path')
 const runParallel = require('run-parallel')
@@ -28,8 +27,9 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     if (pathname === '/') return serveIndex(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
-    if (pathname === '/client.js') return serveClient(request, response)
-    if (pathname === '/subscribe.js') return serveSubscribeScript(request, response)
+    if (pathname === '/client.js') return serveScript(request, response)
+    if (pathname === '/subscribe.js') return serveScript(request, response)
+    if (pathname === '/authenticate.js') return serveScript(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
@@ -40,6 +40,7 @@ module.exports = (request, response) => {
     if (pathname === '/reset') return serveReset(request, response)
     if (pathname === '/confirm') return serveConfirm(request, response)
     if (pathname === '/subscribe') return serveSubscribe(request, response)
+    if (pathname === '/subscribed') return serveSubscribed(request, response)
     if (pathname === '/unsubscribe') return serveUnsubscribe(request, response)
     if (pathname === '/stripe-webhook') return serveStripeWebhook(request, response)
     if (pathname === '/internal-error' && !inProduction) {
@@ -67,11 +68,25 @@ function nav (request) {
 <nav role=navigation>
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
-  ${handle && !account.subscriptionID && '<a id=subscribe class=button href=/subscribe>Subscribe</a>'}
+  ${handle && !account.subscriptionID && subscribeButton(request)}
   ${handle && account.subscriptionID && '<a id=unsubscribe class=button href=/unsubscribe>Unsubscribe</a>'}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
+  `
+}
+
+function subscribeButton (request) {
+  const action = '/subscribe'
+  const csrfInputs = csrf.inputs({
+    action,
+    sessionID: request.session.id
+  })
+  return html`
+<form action=${action} method=post>
+  ${csrfInputs}
+  <button id=subscribe type=submit>Subscribe</button>
+</form>
   `
 }
 
@@ -116,14 +131,9 @@ function serveStyles (request, response) {
   fs.createReadStream(file).pipe(response)
 }
 
-function serveClient (request, response) {
-  const file = path.join(__dirname, 'client.js')
-  response.setHeader('Content-Type', 'text/javascript')
-  fs.createReadStream(file).pipe(response)
-}
-
-function serveSubscribeScript (request, response) {
-  const file = path.join(__dirname, 'subscribe.js')
+function serveScript (request, response) {
+  const basename = path.basename(request.parsed.pathname)
+  const file = path.join(__dirname, basename)
   response.setHeader('Content-Type', 'text/javascript')
   fs.createReadStream(file).pipe(response)
 }
@@ -1191,9 +1201,7 @@ function serveConfirm (request, response) {
 function serveSubscribe (request, response) {
   const title = 'Subscribe'
 
-  const fields = {
-    paymentMethodID: { validate: e => e.length > 0 }
-  }
+  const fields = {}
 
   formRoute({
     action: '/subscribe',
@@ -1208,6 +1216,7 @@ function serveSubscribe (request, response) {
     const { email, handle } = request.account
     const alreadyCustomer = Boolean(request.account.customerID)
     let customerID
+    const toForm = {}
     runSeries([
       // Create a customer if needed.
       done => {
@@ -1226,7 +1235,6 @@ function serveSubscribe (request, response) {
           })
         })
       },
-
       // Check for an active subscription.
       done => {
         if (!alreadyCustomer) return done()
@@ -1245,62 +1253,52 @@ function serveSubscribe (request, response) {
           done()
         })
       },
-
-      // Attach new payment method to customer.
       done => {
-        stripe.paymentMethods.attach(
-          body.paymentMethodID,
-          { customer: customerID },
-          done
-        )
-      },
-
-      // Set the new payment method as the customer's default.
-      done => {
-        stripe.customers.update(customerID, {
-          invoice_settings: {
-            default_payment_method: body.paymentMethodID
-          }
-        }, done)
-      },
-
-      // Create subscription.
-      done => {
-        stripe.subscriptions.create({
+        stripe.checkout.sessions.create({
           customer: customerID,
-          items: [{ plan: process.env.STRIPE_PLAN }]
-        }, (error, subscription) => {
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price: process.env.STRIPE_PLAN,
+              quantity: 1
+            }
+          ],
+          mode: 'subscription',
+          success_url: `${process.env.BASE_HREF}/subscribed?sessionID={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${process.env.BASE_HREF}/subscribe`
+        }, (error, session) => {
           if (error) return done(error)
-          const subscriptionID = subscription.id
-          request.log.info({ subscription }, 'created Stripe subscription')
-          storage.account.update(handle, { subscriptionID }, error => {
-            if (error) return done(error)
-            done()
-          })
+          toForm.sessionID = session.id
+          done()
         })
       }
-    ], done)
+    ], error => {
+      if (error) return done(error)
+      done(null, toForm)
+    })
   }
 
-  function onSuccess (request, response) {
+  function onSuccess (request, response, body, options) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Subscribed / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
-    ${header}
-    ${nav(request)}
-    <main role=main>
-      <h2>Subscribed</h2>
-      <p class=message>Thank you for subscribing to Proseline!</p>
-    </main>
+    <script src=https://js.stripe.com/v3/></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const stripe = Stripe(${JSON.stringify(process.env.STRIPE_PUBLISHABLE_KEY)})
+        const sessionId = ${JSON.stringify(options.sessionID)}
+        stripe.redirectToCheckout({ sessionId })
+      })
+    </script>
   </body>
 </html>
-  `)
+    `)
   }
 
   function form (request, data) {
@@ -1320,21 +1318,36 @@ function serveSubscribe (request, response) {
         <div id=card></div>
         <div id=errors></div>
         <form id=subscribeForm method=post>
-          ${data.error}
           ${data.csrf}
-          <input type=hidden name=paymentMethodID>
           <button type=submit>${title}</button>
         </form>
       </main>
-      <script src=https://js.stripe.com/v3/></script>
-      <script>
-        window.STRIPE_PUBLISHABLE_KEY = ${JSON.stringify(process.env.STRIPE_PUBLISHABLE_KEY)}
-      </script>
-      <script src=/subscribe.js></script>
     </body>
   </html>
     `)
   }
+}
+
+function serveSubscribed (request, response) {
+  const title = 'Subscribed'
+  response.setHeader('Content-Type', 'text/html')
+  response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title} / Proseline</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <p class=message>Thank you for subscribing!</p>
+    </main>
+  </body>
+</html>
+  `)
 }
 
 function serveUnsubscribe (request, response) {
@@ -1437,29 +1450,56 @@ function serveUnsubscribe (request, response) {
 }
 
 function serveStripeWebhook (request, response) {
-  simpleConcatLimit(request, 1000, function (error, buffer) {
-    /* istanbul ignore if */
+  const signature = request.headers['stripe-signature']
+  simpleConcatLimit(request, 2048, (error, buffer) => {
     if (error) {
+      response.statusCode = 500
+      return response.end()
+    }
+
+    let event
+    try {
+      event = stripe.webhooks.constructEvent(
+        buffer, signature, process.env.STRIPE_WEBHOOK_SECRET
+      )
+    } catch (error) {
+      request.log.error(error)
       response.statusCode = 400
       return response.end()
     }
-    if (!stripe.validSignature(request, buffer)) {
-      response.statusCode = 400
-      return response.end('invalid signature')
+
+    request.log.info({ event }, 'Stripe webhook event')
+
+    const type = event.type
+    if (type === 'checkout.session.completed') {
+      const object = event.data.object
+      const customerID = object.customer
+      const subscriptionID = object.subscription
+      request.log.info({
+        customerID, subscriptionID
+      }, 'Stripe Checkout completed')
+      stripe.customers.retrieve(customerID, (error, customer) => {
+        if (error) return fail(error)
+        const handle = customer.metadata.handle
+        return storage.account.update(
+          handle, { subscriptionID },
+          error => {
+            if (error) return fail(error)
+            response.statusCode = 200
+            response.end()
+          }
+        )
+      })
     }
-    request.log.info('valid signature')
-    parseJSON(buffer, function (error, parsed) {
-      if (error) {
-        response.statusCode = 400
-        return response.end('invalid JSON')
-      }
-      if (typeof parsed !== 'object') {
-        response.statusCode = 400
-        return response.end('not an object')
-      }
-      request.log.info(parsed, 'webhook')
+
+    response.statusCode = 400
+    response.end()
+
+    function fail (error) {
+      request.log.error(error)
+      response.statusCode = 500
       response.end()
-    })
+    }
   })
 }
 
