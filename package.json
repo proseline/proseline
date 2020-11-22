@@ -28,7 +28,7 @@
     "sodium-native": "^3.2.0",
     "standard": "^14.3.3",
     "tape": "^5.0.1",
-    "webdriverio": "^6.1.16"
+    "webdriverio": "^6.9.1"
   },
   "husky": {
     "hooks": {
