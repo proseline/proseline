@@ -27,22 +27,23 @@ module.exports = (handle, password, callback) => {
       const passwordHash = Buffer.from(account.passwordHash, 'hex')
       const passwordBuffer = Buffer.from(password, 'utf8')
       passwordHashing.verify(
-        passwordBuffer, passwordHash, (error, result) => {
+        passwordBuffer, passwordHash, (verifyError, result) => {
           /* istanbul ignore next */
-          if (error) {
-            error.statusCode = 500
-            return callback(error)
+          if (verifyError) {
+            verifyError.statusCode = 500
+            return callback(verifyError)
           }
+          let error
           switch (result) {
             /* istanbul ignore next */
             case securePassword.INVALID_UNRECOGNIZED_HASH:
-              var unrecognized = new Error('unrecognized hash')
-              unrecognized.statusCode = 500
-              return callback(unrecognized)
+              error = new Error('unrecognized hash')
+              error.statusCode = 500
+              return callback(error)
             case securePassword.INVALID:
-              var invalid = new Error('invalid handle or password')
-              invalid.statusCode = 403
-              return callback(invalid, account)
+              error = new Error('invalid handle or password')
+              error.statusCode = 403
+              return callback(error, account)
             /* istanbul ignore next */
             case securePassword.VALID_NEEDS_REHASH:
               return passwordHashing.hash(passwordBuffer, (error, newHash) => {
@@ -60,11 +61,11 @@ module.exports = (handle, password, callback) => {
               return callback(null, account)
             /* istanbul ignore next */
             default:
-              var otherError = new Error(
+              error = new Error(
                 'unexpected password hash result: ' + result
               )
-              otherError.statusCode = 500
-              return callback(otherError)
+              error.statusCode = 500
+              return callback(error)
           }
         }
       )
