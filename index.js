@@ -1359,6 +1359,7 @@ function serveSubscribe (request, response) {
     <main role=main>
       <h2>Subscribe</h2>
       <form id=subscribeForm method=post>
+        ${data.error}
         ${data.csrf}
         <button type=submit>${title}</button>
       </form>
