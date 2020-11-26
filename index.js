@@ -1280,9 +1280,9 @@ function serveSubscribe (request, response) {
           plan: process.env.STRIPE_PLAN,
           status: 'active',
           limit: 1
-        }, (error, subscriptions) => {
+        }, (error, { data: subscriptions }) => {
           if (error) return done(error)
-          if (subscriptions) {
+          if (subscriptions.length !== 0) {
             request.log.info({ subscriptions }, 'subscriptions')
             const alreadySubscribed = new Error('already subscribed')
             alreadySubscribed.statusCode = 400
