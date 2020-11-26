@@ -42,7 +42,7 @@ exports.put = (key, value, callback) => {
   assert(typeof callback === 'function')
   setImmediate(() => {
     data.set(key, value)
-    callback()
+    callback(null, true)
   })
 }
 
