@@ -1,3 +1,8 @@
+// Start the server.
+//
+// Note that `npm start` will run `./start`, rather than
+// running this script directly.
+
 // Logging
 
 const logger = require('pino')()
