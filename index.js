@@ -1356,8 +1356,6 @@ function serveSubscribe (request, response) {
     ${nav(request)}
     <main role=main>
       <h2>Subscribe</h2>
-      <div id=card></div>
-      <div id=errors></div>
       <form id=subscribeForm method=post>
         ${data.csrf}
         <button type=submit>${title}</button>
