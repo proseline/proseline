@@ -1479,6 +1479,15 @@ function serveStripeWebhook (request, response) {
       return stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
+        if (customer.deleted) {
+          response.statusCode = 200
+          return response.end()
+        }
+        if (!customer.metadata || !customer.metadata.handle) {
+          request.log.error({ customer }, 'customer has no handle metadata')
+          response.statusCode = 500
+          return response.end()
+        }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID },
@@ -1509,6 +1518,15 @@ function serveStripeWebhook (request, response) {
       return stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
+        if (customer.deleted) {
+          response.statusCode = 200
+          return response.end()
+        }
+        if (!customer.metadata || !customer.metadata.handle) {
+          request.log.error({ customer }, 'customer has no handle metadata')
+          response.statusCode = 500
+          return response.end()
+        }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID: undefined },
