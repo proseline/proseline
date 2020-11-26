@@ -61,6 +61,11 @@ const meta = html`
 
 const header = '<header role=banner><h1>Proseline</h1></header>'
 
+const footer = `
+<footer role=contentinfo>
+</footer>
+`
+
 function nav (request) {
   const account = request.account
   const handle = account && account.handle
@@ -133,6 +138,7 @@ function serveIndex (request, response) {
     ${header}
     ${nav(request)}
     <main role=main></main>
+    ${footer}
   </body>
 </html>
   `)
@@ -317,6 +323,7 @@ function serveSignUp (request, response) {
       <h2>Success</h2>
       <p class=message>Check your e-mail for a link to confirm your new account.</p>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -363,6 +370,7 @@ function serveSignUp (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -421,6 +429,7 @@ function serveLogIn (request, response) {
       <a href=/handle>Forgot Handle</a>
       <a href=/reset>Reset Password</a>
     </main>
+    ${footer}
   </body>
 </html>
     `
@@ -566,6 +575,7 @@ function serveAccount (request, response) {
       <a class=button href=/password>Change Password</a>
       <a class=button href=/email>Change E-Mail</a>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -618,6 +628,7 @@ function serveHandle (request, response) {
         <button type=submit>Send Handle</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `
@@ -639,6 +650,7 @@ function serveHandle (request, response) {
       <h2>Forgot Handle</h2>
       <p class=message>If the e-mail you entered corresponds to an account, an e-mail was just sent to it.</p>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -697,6 +709,7 @@ function serveEMail (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `
@@ -718,6 +731,7 @@ function serveEMail (request, response) {
       <h2>Change E-Mail</h2>
       <p class=message>Confirmation e-mail sent.</p>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -805,6 +819,7 @@ function getAuthenticated (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -855,6 +870,7 @@ function getWithToken (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -879,6 +895,7 @@ function invalidToken (request, response) {
       <h2>${title}</h2>
       <p class=message>The link you followed is invalid or expired.</p>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -923,6 +940,7 @@ function postPassword (request, response) {
       <h2>${title}</h2>
       <p class=message>Password changed.</p>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -1089,6 +1107,7 @@ function serveReset (request, response) {
         <button type=submit>Send E-Mail</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `
@@ -1135,6 +1154,7 @@ function serveReset (request, response) {
       <h2>Reset Password</h2>
       <p class=message>An e-mail has been sent.</p>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -1200,6 +1220,7 @@ function serveConfirm (request, response) {
       <h2>${title}</h2>
       <p class=message>The e-mail address for your account was successfully changed.</p>
     </main>
+    ${footer}
   </body>
 </html>
           `)
@@ -1333,6 +1354,7 @@ function serveSubscribe (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -1356,6 +1378,7 @@ function serveSubscribed (request, response) {
       <h2>${title}</h2>
       <p class=message>Thank you for subscribing!</p>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -1416,6 +1439,7 @@ function serveSubscription (request, response) {
         <button type=submit>${title}</button>
       </form>
     </main>
+    ${footer}
   </body>
 </html>
     `)
@@ -1732,6 +1756,7 @@ function serve404 (request, response) {
     <main>
       <h2>Not Found</h2>
     </main>
+    ${footer}
   </body>
 </html>
   `)
@@ -1752,6 +1777,7 @@ function serve500 (request, response, error) {
     <main>
       <h1>Internal Error</h1>
     </main>
+    ${footer}
   </body>
 </html>
   `)
