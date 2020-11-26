@@ -44,7 +44,13 @@ exports.get = (key, callback) => {
       if (error.code === 'NoSuchKey') return callback(null, undefined)
       return callback(error)
     }
-    callback(null, data.Body)
+    let parsed
+    try {
+      parsed = JSON.parse(data.Body)
+    } catch (error) {
+      return callback(error)
+    }
+    callback(null, parsed)
   })
 }
 

@@ -43,7 +43,6 @@ token.use = (id, callback) => {
 
 function simpleFiles (subdirectory) {
   assert(typeof subdirectory === 'string')
-  const serialization = JSON
   const filePath = id => path.join(subdirectory, id)
   return {
     write: (id, value, callback) => {
@@ -72,12 +71,12 @@ function simpleFiles (subdirectory) {
       const file = filePath(id)
       lock(file, unlock => {
         callback = unlock(callback)
-        get({ file, serialization }, (error, record) => {
+        get(file, (error, record) => {
           /* istanbul ignore if */
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
-          put({ file, data: record, serialization }, error => {
+          put(file, record, error => {
             /* istanbul ignore if */
             if (error) return callback(error)
             callback(null, record)
@@ -104,13 +103,13 @@ function simpleFiles (subdirectory) {
     assert(value !== undefined)
     assert(typeof callback === 'function')
     const file = filePath(id)
-    put({ file, data: value, serialization }, callback)
+    put(file, value, callback)
   }
 
   function readWithoutLocking (id, callback) {
     assert(typeof id === 'string')
     assert(typeof callback === 'function')
-    get({ file: filePath(id), serialization }, callback)
+    get(filePath(id), callback)
   }
 
   function deleteWithoutLocking (id, callback) {
@@ -124,28 +123,18 @@ function simpleFiles (subdirectory) {
   }
 }
 
-function get ({ file, serialization = JSON }, callback) {
+function get (file, callback) {
   assert(typeof file === 'string')
-  assert(typeof serialization.parse === 'function')
   assert(typeof callback === 'function')
   s3.get(file, (error, data) => {
     if (error) return callback(error)
-    if (data === undefined) return callback(null, undefined)
-    let parsed
-    try {
-      parsed = serialization.parse(data)
-    } catch (error) {
-      /* istanbul ignore next */
-      return callback(error)
-    }
-    return callback(null, parsed)
+    return callback(null, data)
   })
 }
 
-function put ({ file, data, serialization = JSON }, callback) {
+function put (file, data, callback) {
   assert(typeof file === 'string')
   assert(data !== undefined)
-  assert(typeof serialization.stringify === 'function')
-  const stringified = serialization.stringify(data)
-  s3.put(file, stringified, callback)
+  assert(typeof callback === 'function')
+  s3.put(file, data, callback)
 }
