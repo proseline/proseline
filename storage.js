@@ -6,10 +6,10 @@ const path = require('path')
 const s3 = require('./s3')
 
 module.exports = {
-  account: simpleFiles('accounts'),
-  email: simpleFiles('emails'),
-  token: simpleFiles('tokens'),
-  session: simpleFiles('sessions'),
+  account: simple('accounts'),
+  email: simple('emails'),
+  token: simple('tokens'),
+  session: simple('sessions'),
   lock
 }
 
@@ -43,7 +43,7 @@ token.use = (id, callback) => {
   })
 }
 
-function simpleFiles (subdirectory) {
+function simple (subdirectory) {
   assert(typeof subdirectory === 'string')
   const keyFor = id => path.join(subdirectory, id)
   return {
@@ -70,15 +70,15 @@ function simpleFiles (subdirectory) {
       assert(typeof id === 'string')
       assert(typeof properties === 'object')
       assert(typeof callback === 'function')
-      const file = keyFor(id)
-      lock(file, unlock => {
+      const key = keyFor(id)
+      lock(key, unlock => {
         callback = unlock(callback)
-        s3.get(file, (error, record) => {
+        s3.get(key, (error, record) => {
           /* istanbul ignore if */
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
-          s3.put(file, record, error => {
+          s3.put(key, record, error => {
             /* istanbul ignore if */
             if (error) return callback(error)
             callback(null, record)
@@ -104,8 +104,7 @@ function simpleFiles (subdirectory) {
     assert(typeof id === 'string')
     assert(value !== undefined)
     assert(typeof callback === 'function')
-    const file = keyFor(id)
-    s3.put(file, value, callback)
+    s3.put(keyFor(id), value, callback)
   }
 
   function readWithoutLocking (id, callback) {
