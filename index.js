@@ -25,7 +25,7 @@ module.exports = (request, response) => {
   const parsed = request.parsed = parseURL(request.url, true)
   authenticate(request, response, () => {
     const pathname = parsed.pathname
-    if (pathname === '/') return serveIndex(request, response)
+    if (pathname === '/') return serveHomepage(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
     if (pathname === '/client.js') return serveScript(request, response)
     if (pathname === '/subscribe.js') return serveScript(request, response)
@@ -114,7 +114,10 @@ function logoutButton (request) {
     sessionID: request.session.id
   })
   return html`
-<form id=logoutForm action=/logout method=post>
+<form
+    id=logoutForm
+    action=/logout
+    method=post>
   ${csrfInputs}
   <button id=logout type=submit>Log Out</button>
 </form>
@@ -123,7 +126,7 @@ function logoutButton (request) {
 
 // Routes
 
-function serveIndex (request, response) {
+function serveHomepage (request, response) {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
   response.setHeader('Content-Type', 'text/html')
@@ -167,7 +170,7 @@ const handles = (() => {
   const re = new RegExp(pattern)
   return {
     pattern,
-    valid: (string) => re.test(string),
+    validate: (string) => re.test(string),
     html: 'Handles must be ' +
       'made of the characters ‘a’ through ‘z’ ' +
       'and the digits ‘0’ through ‘9’. ' +
@@ -183,7 +186,7 @@ const passwords = (() => {
   const re = new RegExp(pattern)
   return {
     pattern,
-    valid: (string) => {
+    validate: string => {
       if (!re.test(string)) return false
       const length = string.length
       return length >= min && length <= max
@@ -204,10 +207,10 @@ function serveSignUp (request, response) {
     },
     handle: {
       filter: e => e.toLowerCase().trim(),
-      validate: handles.valid
+      validate: handles.validate
     },
     password: {
-      validate: passwords.valid
+      validate: passwords.validate
     },
     repeat: {
       validate: (value, body) => value === body.password
@@ -978,7 +981,7 @@ function postPassword (request, response) {
       error.fieldName = 'repeat'
       return done(error)
     }
-    if (!passwords.valid(password)) {
+    if (!passwords.validate(password)) {
       error = new Error('invalid password')
       error.fieldName = 'password'
       return done(error)
@@ -1064,7 +1067,7 @@ function serveReset (request, response) {
 
   const fields = {
     handle: {
-      validate: handles.valid
+      validate: handles.validate
     }
   }
 
@@ -1742,19 +1745,21 @@ function formRoute ({
 
 function serve404 (request, response) {
   response.statusCode = 404
+  const title = 'Not Found'
   response.setHeader('Content-Type', 'text/html')
   response.end(`
 <!doctype html>
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Not Found / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
-    <main>
-      <h2>Not Found</h2>
+    <main role=main>
+      <h2>${title}</h2>
+      <p>The page you tried to visit doesn’t exist on this site.</p>
     </main>
     ${footer}
   </body>
@@ -1765,17 +1770,18 @@ function serve404 (request, response) {
 function serve500 (request, response, error) {
   request.log.error(error)
   response.statusCode = 500
+  const title = 'Internal Error'
   response.setHeader('Content-Type', 'text/html')
   response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Internal Error / Proseline</title>
+    <title>${title} / Proseline</title>
   </head>
   <body>
-    <main>
-      <h1>Internal Error</h1>
+    <main role=main>
+      <h1>${title}</h1>
     </main>
     ${footer}
   </body>
