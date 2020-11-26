@@ -554,15 +554,15 @@ function serveAccount (request, response) {
       <table>
         <tr>
           <th>Handle</th>
-          <td class=handle>${escape(account.handle)}</td>
+          <td class=handle>${escapeHTML(account.handle)}</td>
         </tr>
         <tr>
           <th>E-Mail</th>
-          <td class=email>${escape(account.email)}</td>
+          <td class=email>${escapeHTML(account.email)}</td>
         </tr>
         <tr>
           <th>signed Up</th>
-          <td class=signedup>${escape(new Date(account.created).toISOString())}</td>
+          <td class=signedup>${escapeHTML(new Date(account.created).toISOString())}</td>
         </tr>
       </table>
       <a class=button href=/password>Change Password</a>
