@@ -71,12 +71,12 @@ function simpleFiles (subdirectory) {
       const file = filePath(id)
       lock(file, unlock => {
         callback = unlock(callback)
-        get(file, (error, record) => {
+        s3.get(file, (error, record) => {
           /* istanbul ignore if */
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
-          put(file, record, error => {
+          s3.put(file, record, error => {
             /* istanbul ignore if */
             if (error) return callback(error)
             callback(null, record)
@@ -103,13 +103,13 @@ function simpleFiles (subdirectory) {
     assert(value !== undefined)
     assert(typeof callback === 'function')
     const file = filePath(id)
-    put(file, value, callback)
+    s3.put(file, value, callback)
   }
 
   function readWithoutLocking (id, callback) {
     assert(typeof id === 'string')
     assert(typeof callback === 'function')
-    get(filePath(id), callback)
+    s3.get(filePath(id), callback)
   }
 
   function deleteWithoutLocking (id, callback) {
@@ -121,20 +121,4 @@ function simpleFiles (subdirectory) {
       return callback(error)
     })
   }
-}
-
-function get (file, callback) {
-  assert(typeof file === 'string')
-  assert(typeof callback === 'function')
-  s3.get(file, (error, data) => {
-    if (error) return callback(error)
-    return callback(null, data)
-  })
-}
-
-function put (file, data, callback) {
-  assert(typeof file === 'string')
-  assert(data !== undefined)
-  assert(typeof callback === 'function')
-  s3.put(file, data, callback)
 }
