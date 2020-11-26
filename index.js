@@ -1,3 +1,5 @@
+// Route and handle HTTP requests.
+
 const Busboy = require('busboy')
 const cookie = require('cookie')
 const csrf = require('./csrf')

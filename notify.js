@@ -1,10 +1,9 @@
+// Send e-mails based on templates.
+
 const mail = require('./mail')
 const markdown = require('./markdown')
 
 exports.confirmAccount = ({ to, handle, url }, callback) => {
-  const text = `
-  `.trim()
-  const html = markdown(text)
   send({
     to,
     subject: 'Confirm Proseline Account',
@@ -12,9 +11,7 @@ exports.confirmAccount = ({ to, handle, url }, callback) => {
 Follow this link to confirm your Proseline account:
 
 <${url}>
-    `.trim(),
-    text,
-    html
+    `.trim()
   }, callback)
 }
 
@@ -60,6 +57,7 @@ To confirm the new e-mail address for your Proseline account, follow this link:
   }, callback)
 }
 
+// Send e-mail as plain text and HTML from Markdown source.
 function send ({ to, subject, markup }, callback) {
   mail({
     to,

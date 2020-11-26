@@ -1,9 +1,11 @@
-// Cross-Site Request Forgery Token Generation and Verification
+// Generate and verify tokens used to prevent cross-site
+// request forgery.
 
 const assert = require('assert')
 const expired = require('./expired')
 const sodium = require('sodium-native')
 
+// Generate CSRF tokens.
 exports.generate = ({
   action,
   sessionID,
@@ -26,6 +28,7 @@ exports.generate = ({
   }
 }
 
+// Generate hidden HTML form inputs.
 exports.inputs = ({ action, sessionID }) => {
   assert(typeof action === 'string')
   assert(typeof sessionID === 'string')
@@ -37,6 +40,7 @@ exports.inputs = ({ action, sessionID }) => {
   `
 }
 
+// Verify a CSRF token submitted with a form.
 exports.verify = ({ action, sessionID, token, nonce }, callback) => {
   assert(typeof action === 'string')
   assert(typeof sessionID === 'string')
@@ -76,6 +80,9 @@ exports.verify = ({ action, sessionID, token, nonce }, callback) => {
   callback()
 }
 
+// Return a random key for generating CSRF tokens. The
+// web application loads such a key from the CSRF_KEY
+// environment variable.
 exports.randomKey = () => {
   const key = sodium.sodium_malloc(sodium.crypto_secretbox_KEYBYTES)
   sodium.randombytes_buf(key)

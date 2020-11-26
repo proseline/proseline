@@ -1,3 +1,5 @@
+// Predicates to check expiration dates.
+
 exports.csrfToken = dateString => expired({
   dateString,
   lifetime: days(7)

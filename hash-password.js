@@ -1,3 +1,5 @@
+// Hash passwords for server-side storage.
+
 const passwordHashing = require('./password-hashing')
 
 module.exports = (password, callback) => {

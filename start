@@ -1,4 +1,6 @@
 #!/bin/bash
+# If the environment has Papertrail credentials, send log
+# messages to Papertail.
 if [ -z "$PAPERTRAIL_HOST" ]; then
   node server.js
 else

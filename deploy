@@ -1,11 +1,19 @@
 #!/bin/sh
+# Deploy the application to the Internet.
+set -e
 git push origin master
 ssh proseline.com <<'SCRIPT'
+set -e
+if [ ! -d proseline ]; then
+  git clone https://github.com/proseline/proseline proseline
+fi
 cd proseline
 old_hash="$(shasum package-lock.json)"
 git fetch origin
 git reset --hard origin/master
 new_hash="$(shasum package-lock.json)"
-[ "$old_hash" != "$new_hash" ] && npm ci
+if [ "$old_hash" != "$new_hash" ]; then
+  npm ci
+fi
 systemctl --user restart proseline
 SCRIPT

@@ -1,3 +1,6 @@
+// Send e-mail.
+
+// In production, send mail via SMTP.
 /* istanbul ignore if */
 if (process.env.NODE_ENV === 'production') {
   const nodemailer = require('nodemailer')
@@ -14,6 +17,8 @@ if (process.env.NODE_ENV === 'production') {
     data.from = process.env.SMTP_USER
     transport.sendMail(data, callback)
   }
+// In testing, mock e-mail, exposing an Event Emitter that
+// tests can uses to intercept e-mails and their contents.
 } else {
   const EventEmitter = require('events').EventEmitter
   const emitter = new EventEmitter()

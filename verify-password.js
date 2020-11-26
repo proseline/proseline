@@ -1,3 +1,5 @@
+// Verify submitted passwords against stored hashes.
+
 const assert = require('assert')
 const expired = require('./expired')
 const storage = require('./storage')

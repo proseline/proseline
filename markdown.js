@@ -1,3 +1,5 @@
+// Render Markdown as HTML.
+
 const commonmark = require('commonmark')
 
 module.exports = markup => {

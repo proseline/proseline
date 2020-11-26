@@ -1,12 +1,15 @@
 // Tag function for tag templates literals constructing HTML.
+//
 // Adds a few semantic niceties:
 //
-// 1.  Falsey values in expressions don't produce output.
+// 1. Falsey values in expressions don't produce output.
 //
-// 2.  Array values in expressions get stringified and concatenated.
+// 2. Array values in expressions get stringified and
+//    concatenated.
 //
-// These make it much more convenient do achieve conditional markup
-// using boolean expressions, without control structures.
+// These make it much more convenient do achieve conditional
+// markup using expressions, without control structures.
+
 module.exports = (strings, ...values) => {
   let result = ''
   strings.forEach(function (string, index) {
@@ -15,9 +18,9 @@ module.exports = (strings, ...values) => {
       result += toString(values[index])
     }
   })
-  // Trim so that the newline after the opening backtick and first
-  // expression loading the header with <!doctype html> ends up on the
-  // first line.
+  // Trim so that the newline after the opening backtick
+  // and first expression loading the header with
+  // <!doctype html> ends up on the first line.
   return result.trim()
 }
 

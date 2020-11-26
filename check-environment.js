@@ -1,3 +1,5 @@
+// Ensure environment variables have been set.
+
 module.exports = () => {
   const requiredEnvironmentVariables = [
     'NODE_ENV',
