@@ -1265,7 +1265,7 @@ function serveSubscribe (request, response) {
           if (error) return done(error)
           customerID = customer.id
           request.log.info({ customer }, 'created Stripe customer')
-          // Update account record.
+          // Save Stripe customer ID to account record.
           storage.account.update(handle, { customerID }, error => {
             if (error) return done(error)
             done()
