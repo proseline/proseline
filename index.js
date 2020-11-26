@@ -109,6 +109,7 @@ function subscriptionButton (request) {
 </form>
   `
 }
+
 function logoutButton (request) {
   const csrfInputs = csrf.inputs({
     action: '/logout',
