@@ -456,7 +456,7 @@ function serveLogIn (request, response) {
           const statusCode = verifyError.statusCode
           if (statusCode === 500) return done(verifyError)
           if (!account) return done(verifyError)
-          request.log.info(verifyError, 'authentication error')
+          request.log.info(verifyError, 'bad password')
           const failures = account.failures + 1
           if (failures >= 5) {
             return storage.account.update(handle, {
