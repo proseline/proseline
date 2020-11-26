@@ -21,13 +21,6 @@ simple({
 })
 
 simple({
-  path: '/client.js',
-  status: 200,
-  mime: 'text/javascript',
-  content: 'document.addEventListener'
-})
-
-simple({
   path: '/nonexistent',
   status: 404,
   mime: 'text/html',
