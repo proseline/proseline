@@ -14,7 +14,7 @@
     "run-series": "^1.1.9",
     "secure-password": "^4.0.0",
     "simple-concat-limit": "^2.0.3",
-    "stripe": "^8.125.0",
+    "stripe": "^8.126.0",
     "url-parse": "^1.4.7",
     "uuid": "^8.3.1"
   },
