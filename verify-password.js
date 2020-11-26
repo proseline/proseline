@@ -1,9 +1,13 @@
+const assert = require('assert')
 const expired = require('./expired')
 const storage = require('./storage')
 const passwordHashing = require('./password-hashing')
 const securePassword = require('secure-password')
 
 module.exports = (handle, password, callback) => {
+  assert(typeof handle === 'string')
+  assert(typeof password === 'string')
+  assert(typeof callback === 'function')
   const file = storage.account.filePath(handle)
   storage.lock(file, unlock => {
     callback = unlock(callback)
