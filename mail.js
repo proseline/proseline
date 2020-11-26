@@ -10,7 +10,10 @@ if (process.env.NODE_ENV === 'production') {
       pass: process.env.SMTP_PASSWORD
     }
   })
-  module.exports = transport.sendMail.bind(transport)
+  module.exports = (data, callback) => {
+    data.from = process.env.SMTP_USER
+    transport.sendMail(data, callback)
+  }
 } else {
   const EventEmitter = require('events').EventEmitter
   const emitter = new EventEmitter()
