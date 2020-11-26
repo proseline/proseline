@@ -7,7 +7,7 @@ const os = require('os')
 const path = require('path')
 const pino = require('pino')
 const pinoHTTP = require('pino-http')
-const rimraf = require('rimraf')
+const s3 = require('../s3')
 const spawn = require('child_process').spawn
 
 module.exports = callback => {
@@ -15,7 +15,6 @@ module.exports = callback => {
   const logger = pino({}, fs.createWriteStream('test-server.log'))
   const addLoggers = pinoHTTP({ logger })
   process.env.CSRF_KEY = csrf.randomKey()
-  let directory
   let webServer
   let stripeCLI
   fs.mkdtemp(path.join(os.tmpdir(), 'proseline-'), (error, tmp) => {
@@ -61,7 +60,7 @@ module.exports = callback => {
 
   function cleanup () {
     if (webServer) webServer.close()
-    if (directory) rimraf(directory, () => {})
     if (stripeCLI) stripeCLI.kill()
+    s3.clear()
   }
 }
