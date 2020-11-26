@@ -1449,7 +1449,7 @@ function serveSubscription (request, response) {
 
 function serveStripeWebhook (request, response) {
   const signature = request.headers['stripe-signature']
-  simpleConcatLimit(request, 2048, (error, buffer) => {
+  simpleConcatLimit(request, 4096, (error, buffer) => {
     if (error) {
       response.statusCode = 500
       return response.end()
@@ -1496,7 +1496,7 @@ function serveStripeWebhook (request, response) {
                 subject: 'Subscribed',
                 text: `Handle: ${handle}\nE-Mail: ${email}\n`
               }, error => {
-                if (error) request.log.error(error)
+                if (error) request.log.warn(error)
               })
             }
             return succeed()
@@ -1532,7 +1532,7 @@ function serveStripeWebhook (request, response) {
                 subject: 'Unsubscribed',
                 text: `Handle: ${handle}\nE-Mail: ${email}\n`
               }, error => {
-                if (error) request.log.error(error)
+                if (error) request.log.warn(error)
               })
             }
             return succeed()
@@ -1540,26 +1540,25 @@ function serveStripeWebhook (request, response) {
         )
       })
     }
-
     badRequest()
-
-    function badRequest (error) {
-      if (error) request.log.warn(error)
-      response.statusCode = 400
-      return response.end()
-    }
-
-    function succeed () {
-      response.statusCode = 200
-      response.end()
-    }
-
-    function fail (error) {
-      request.log.error(error)
-      response.statusCode = 500
-      response.end()
-    }
   })
+
+  function badRequest (error) {
+    if (error) request.log.warn(error)
+    response.statusCode = 400
+    return response.end()
+  }
+
+  function succeed () {
+    response.statusCode = 200
+    response.end()
+  }
+
+  function fail (error) {
+    request.log.error(error)
+    response.statusCode = 500
+    response.end()
+  }
 }
 
 function setCookie (response, value, expires) {
