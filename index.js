@@ -75,7 +75,7 @@ function nav (request) {
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && !account.subscriptionID && subscribeButton(request)}
-  ${handle && account.subscriptionID && subscriptionButton(request)}
+  ${handle && account.subscriptionID && manageSubscriptionButton(request)}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
@@ -96,7 +96,7 @@ function subscribeButton (request) {
   `
 }
 
-function subscriptionButton (request) {
+function manageSubscriptionButton (request) {
   const action = '/subscription'
   const csrfInputs = csrf.inputs({
     action,
@@ -105,7 +105,7 @@ function subscriptionButton (request) {
   return html`
 <form action=${action} method=post>
   ${csrfInputs}
-  <button id=subscription type=submit>Subscription</button>
+  <button id=subscription type=submit>Manage Subscription</button>
 </form>
   `
 }
