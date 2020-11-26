@@ -1461,9 +1461,7 @@ function serveStripeWebhook (request, response) {
         buffer, signature, process.env.STRIPE_WEBHOOK_SECRET
       )
     } catch (error) {
-      request.log.error(error)
-      response.statusCode = 400
-      return response.end()
+      return badRequest(error)
     }
 
     request.log.info({ event }, 'Stripe webhook event')
@@ -1480,21 +1478,17 @@ function serveStripeWebhook (request, response) {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
         if (customer.deleted) {
-          response.statusCode = 200
-          return response.end()
+          request.log.info('Stripe customer deleted')
+          return succeed()
         }
         if (!customer.metadata || !customer.metadata.handle) {
-          request.log.error({ customer }, 'customer has no handle metadata')
-          response.statusCode = 500
-          return response.end()
+          return fail(new Error('customer has no handle metadata'))
         }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID },
           error => {
             if (error) return fail(error)
-            response.statusCode = 200
-            response.end()
             if (process.env.ADMIN_EMAIL) {
               const email = customer.email
               mail({
@@ -1505,6 +1499,7 @@ function serveStripeWebhook (request, response) {
                 if (error) request.log.error(error)
               })
             }
+            return succeed()
           }
         )
       })
@@ -1519,21 +1514,17 @@ function serveStripeWebhook (request, response) {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
         if (customer.deleted) {
-          response.statusCode = 200
-          return response.end()
+          request.log.info('Stripe customer deleted')
+          return succeed()
         }
         if (!customer.metadata || !customer.metadata.handle) {
-          request.log.error({ customer }, 'customer has no handle metadata')
-          response.statusCode = 500
-          return response.end()
+          return fail(new Error('customer has no handle metadata'))
         }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID: undefined },
           error => {
             if (error) return fail(error)
-            response.statusCode = 200
-            response.end()
             if (process.env.ADMIN_EMAIL) {
               const email = customer.email
               mail({
@@ -1544,13 +1535,24 @@ function serveStripeWebhook (request, response) {
                 if (error) request.log.error(error)
               })
             }
+            return succeed()
           }
         )
       })
     }
 
-    response.statusCode = 400
-    response.end()
+    badRequest()
+
+    function badRequest (error) {
+      if (error) request.log.warn(error)
+      response.statusCode = 400
+      return response.end()
+    }
+
+    function succeed () {
+      response.statusCode = 200
+      response.end()
+    }
 
     function fail (error) {
       request.log.error(error)
