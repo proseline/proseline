@@ -59,6 +59,8 @@ const meta = html`
 <link href=/styles.css rel=stylesheet>
 `
 
+const titleSuffix = ' / Proseline'
+
 const header = '<header role=banner><h1>Proseline</h1></header>'
 
 const footer = `
@@ -317,7 +319,7 @@ function serveSignUp (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -339,7 +341,7 @@ function serveSignUp (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -407,7 +409,7 @@ function serveLogIn (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -554,7 +556,7 @@ function serveAccount (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Account / Proseline</title>
+    <title>Account${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -608,7 +610,7 @@ function serveHandle (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -644,7 +646,7 @@ function serveHandle (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Forgot Handle / Proseline</title>
+    <title>Forgot Handle${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -697,7 +699,7 @@ function serveEMail (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -725,7 +727,7 @@ function serveEMail (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -800,7 +802,7 @@ function getAuthenticated (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -851,7 +853,7 @@ function getWithToken (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -889,7 +891,7 @@ function invalidToken (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -934,7 +936,7 @@ function postPassword (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1085,7 +1087,7 @@ function serveReset (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1149,7 +1151,7 @@ function serveReset (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1214,7 +1216,7 @@ function serveConfirm (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1320,7 +1322,7 @@ function serveSubscribe (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     <script src=https://js.stripe.com/v3/></script>
@@ -1343,7 +1345,7 @@ function serveSubscribe (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1372,7 +1374,7 @@ function serveSubscribed (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1427,7 +1429,7 @@ function serveSubscription (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1752,7 +1754,7 @@ function serve404 (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     ${header}
@@ -1777,7 +1779,7 @@ function serve500 (request, response, error) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title} / Proseline</title>
+    <title>${title}${titleSuffix}</title>
   </head>
   <body>
     <main role=main>
