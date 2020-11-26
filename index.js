@@ -1486,6 +1486,7 @@ function serveStripeWebhook (request, response) {
       }, 'Stripe Checkout completed')
       stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
+        request.log.info({ customer }, 'customer')
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID },
@@ -1505,6 +1506,7 @@ function serveStripeWebhook (request, response) {
       }, 'Stripe subscription canceled')
       stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
+        request.log.info({ customer }, 'customer')
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID: undefined },
