@@ -1311,7 +1311,10 @@ function serveSubscribe (request, response) {
         })
       }
     ], error => {
-      if (error) return done(error)
+      if (error) {
+        request.log.error(error)
+        return done(error)
+      }
       done(null, toForm)
     })
   }
