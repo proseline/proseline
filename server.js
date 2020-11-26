@@ -19,7 +19,7 @@ process
   .on('SIGTERM', shutdown)
   .on('SIGQUIT', shutdown)
   .on('SIGINT', shutdown)
-  .on('uncaughtException', (error) => {
+  .on('uncaughtException', error => {
     logger.error(error, 'uncaughtException')
     shutdown()
   })

@@ -71,11 +71,11 @@ tape('sign up', test => {
         test.end()
         done()
       })
-    mail.once('sent', options => {
-      test.equal(options.to, email, 'sends e-mail')
-      test.assert(options.subject.includes('Confirm'), 'subject')
-      test.assert(options.text.includes('/confirm?token='), 'link')
-      const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
+    mail.once('sent', ({ to, subject, text }) => {
+      test.equal(to, email, 'sends e-mail')
+      test.assert(subject.includes('Confirm'), 'subject')
+      test.assert(text.includes('/confirm?token='), 'link')
+      const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
       browser.navigateTo(url)
         .then(() => browser.$('a=Log In'))
         .then(a => a.click())
@@ -93,10 +93,10 @@ tape('sign up', test => {
           test.fail(error)
           finish()
         })
-      mail.once('sent', options => {
-        test.equal(options.subject, 'Sign Up', 'admin notification')
-        test.assert(options.text.includes(handle), 'includes handle')
-        test.assert(options.text.includes(email), 'includes email')
+      mail.once('sent', ({ subject, text }) => {
+        test.equal(subject, 'Sign Up', 'admin notification')
+        test.assert(text.includes(handle), 'includes handle')
+        test.assert(text.includes(email), 'includes email')
       })
     })
     function finish () {

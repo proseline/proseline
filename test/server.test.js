@@ -5,7 +5,7 @@ const spawn = require('child_process').spawn
 const tape = require('tape')
 
 tape('server', test => {
-  fs.mkdtemp('/tmp/', (_) => {
+  fs.mkdtemp('/tmp/', _ => {
     let server, curl
     const serverPort = 8080
     runSeries([

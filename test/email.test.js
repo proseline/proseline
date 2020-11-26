@@ -40,10 +40,10 @@ tape('change e-mail', test => {
       .then(() => browser.$('#emailForm input[name="email"]'))
       .then(input => input.addValue(newEMail))
       .then(() => {
-        mail.once('sent', options => {
-          test.equal(options.to, newEMail, 'TO: new email')
-          test.assert(options.subject.includes('Confirm'), 'Confirm')
-          const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
+        mail.once('sent', ({ to, subject, text }) => {
+          test.equal(to, newEMail, 'TO: new email')
+          test.assert(subject.includes('Confirm'), 'Confirm')
+          const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
           browser.navigateTo(url)
             .then(() => browser.$('p.message'))
             .then(p => p.getText())

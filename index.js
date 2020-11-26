@@ -172,7 +172,7 @@ const handles = (() => {
   const re = new RegExp(pattern)
   return {
     pattern,
-    validate: (string) => re.test(string),
+    validate: string => re.test(string),
     html: 'Handles must be ' +
       'made of the characters ‘a’ through ‘z’ ' +
       'and the digits ‘0’ through ‘9’. ' +
@@ -1321,7 +1321,7 @@ function serveSubscribe (request, response) {
     })
   }
 
-  function onSuccess (request, response, body, options) {
+  function onSuccess (request, response, body, { sessiobnID }) {
     response.setHeader('Content-Type', 'text/html')
     response.end(html`
 <!doctype html>
@@ -1335,7 +1335,7 @@ function serveSubscribe (request, response) {
     <script>
       document.addEventListener('DOMContentLoaded', () => {
         const stripe = Stripe(${JSON.stringify(process.env.STRIPE_PUBLISHABLE_KEY)})
-        const sessionId = ${JSON.stringify(options.sessionID)}
+        const sessionId = ${JSON.stringify(sessionID)}
         stripe.redirectToCheckout({ sessionId })
       })
     </script>

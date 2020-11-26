@@ -1,24 +1,24 @@
-exports.csrfToken = (dateString) => expired({
+exports.csrfToken = dateString => expired({
   dateString,
   lifetime: days(7)
 })
 
-exports.accountLock = (dateString) => expired({
+exports.accountLock = dateString => expired({
   dateString,
   lifetime: days(1)
 })
 
-exports.changeEMailToken = (dateString) => expired({
+exports.changeEMailToken = dateString => expired({
   dateString,
   lifetime: hours(1)
 })
 
-exports.confirmAccountToken = (dateString) => expired({
+exports.confirmAccountToken = dateString => expired({
   dateString,
   lifetime: days(1)
 })
 
-exports.resetPasswordToken = (dateString) => expired({
+exports.resetPasswordToken = dateString => expired({
   dateString,
   lifetime: hours(1)
 })
@@ -29,7 +29,7 @@ const actionToExpiration = {
   reset: exports.resetPasswordToken
 }
 
-exports.token = (token) => {
+exports.token = token => {
   const predicate = actionToExpiration[token.action]
   if (!predicate) return false
   return predicate(token.created)

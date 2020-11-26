@@ -1,17 +1,12 @@
 const assert = require('assert')
 const mail = require('../mail').events
 
-module.exports = (options, callback) => {
-  assert(options.browser)
-  assert(Number.isSafeInteger(options.port))
-  assert(typeof options.handle === 'string')
-  assert(typeof options.password === 'string')
-  assert(typeof options.email === 'string')
-  const browser = options.browser
-  const port = options.port
-  const handle = options.handle
-  const password = options.password
-  const email = options.email
+module.exports = ({ browser, port, handle, password, email }, callback) => {
+  assert(browser)
+  assert(Number.isSafeInteger(port))
+  assert(typeof handle === 'string')
+  assert(typeof password === 'string')
+  assert(typeof email === 'string')
   browser.navigateTo('http://localhost:' + port)
     .then(() => browser.$('a=Sign Up'))
     .then(a => a.click())
@@ -26,11 +21,11 @@ module.exports = (options, callback) => {
     .then(() => browser.$('#signupForm button[type="submit"]'))
     .then(submit => submit.click())
     .catch(callback)
-  mail.once('sent', options => {
-    if (!options.subject.includes('Confirm')) {
+  mail.once('sent', ({ subject, text }) => {
+    if (!subject.includes('Confirm')) {
       return callback(new Error('no confirmation e-mail'))
     }
-    const url = /<(http:\/\/[^ ]+)>/.exec(options.text)[1]
+    const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
     browser.navigateTo(url)
       .then(() => { callback() })
       .catch(callback)

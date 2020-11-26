@@ -33,9 +33,9 @@ tape('discover handle', test => {
           browser, port, handle, password, email
         }, error => {
           if (error) reject(error)
-          mail.once('sent', options => {
-            test.equal(options.to, email, 'sent mail')
-            test.assert(options.text.includes(handle), 'mailed handle')
+          mail.once('sent', ({ to, text }) => {
+            test.equal(to, email, 'sent mail')
+            test.assert(text.includes(handle), 'mailed handle')
             finish()
           })
           resolve()

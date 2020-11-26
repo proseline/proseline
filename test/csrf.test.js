@@ -2,7 +2,7 @@ const csrf = require('../csrf')
 const tape = require('tape')
 const uuid = require('uuid')
 
-tape('CSRF round trip', (test) => {
+tape('CSRF round trip', test => {
   process.env.CSRF_KEY = csrf.randomKey()
   const action = '/logout'
   const sessionID = uuid.v4()
@@ -13,7 +13,7 @@ tape('CSRF round trip', (test) => {
   })
 })
 
-tape('CSRF action mismatch', (test) => {
+tape('CSRF action mismatch', test => {
   process.env.CSRF_KEY = csrf.randomKey()
   const action = '/logout'
   const sessionID = uuid.v4()
@@ -25,7 +25,7 @@ tape('CSRF action mismatch', (test) => {
   })
 })
 
-tape('CSRF session mismatch', (test) => {
+tape('CSRF session mismatch', test => {
   process.env.CSRF_KEY = csrf.randomKey()
   const action = '/logout'
   const sessionID = uuid.v4()

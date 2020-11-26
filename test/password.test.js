@@ -43,9 +43,9 @@ tape('change password', test => {
             .then(() => browser.$('#passwordForm input[name="repeat"]'))
             .then(input => input.addValue(newPassword))
             .then(() => {
-              mail.once('sent', options => {
-                test.equal(options.to, email, 'email')
-                test.assert(options.subject.includes('Password'), 'Password')
+              mail.once('sent', { to, subject } => {
+                test.equal(to, email, 'email')
+                test.assert(subject.includes('Password'), 'Password')
               })
             })
             .then(() => browser.$('#passwordForm button[type="submit"]'))

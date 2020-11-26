@@ -8,7 +8,7 @@ const driver = spawn('geckodriver')
 
 let remote
 
-module.exports = function () {
+module.exports = () => {
   if (!remote) {
     remote = webdriverio.remote({
       logLevel: 'error',
