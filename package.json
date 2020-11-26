@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "aws-sdk": "^2.799.0",
     "busboy": "^0.3.1",
     "commonmark": "^0.29.2",
     "cookie": "^0.4.1",
