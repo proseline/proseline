@@ -1283,6 +1283,7 @@ function serveSubscribe (request, response) {
         }, (error, subscriptions) => {
           if (error) return done(error)
           if (subscriptions) {
+            request.log.info({ subscriptions }, 'subscriptions')
             const alreadySubscribed = new Error('already subscribed')
             alreadySubscribed.statusCode = 400
             return done(alreadySubscribed)
