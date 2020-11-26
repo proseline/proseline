@@ -16,3 +16,8 @@ a[href] {
 a[href]:hover {
   text-decoration: underline;
 }
+
+.logo {
+  width: 5rem;
+}
+

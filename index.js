@@ -29,6 +29,7 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     if (pathname === '/') return serveHomepage(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
+    if (pathname === '/logo.svg') return serveLogo(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
@@ -60,7 +61,10 @@ const meta = html`
 
 const titleSuffix = ' / Proseline'
 
-const header = '<header role=banner><h1>Proseline</h1></header>'
+const header = `<header role=banner>
+  <img class=logo src=/logo.svg alt=logo>
+  <h1>Proseline</h1>
+</header>`
 
 const footer = `
 <footer role=contentinfo>
@@ -152,6 +156,12 @@ function serveHomepage (request, response) {
 function serveStyles (request, response) {
   const file = path.join(__dirname, 'styles.css')
   response.setHeader('Content-Type', 'text/css')
+  fs.createReadStream(file).pipe(response)
+}
+
+function serveLogo (request, response) {
+  const file = path.join(__dirname, 'logo.svg')
+  response.setHeader('Content-Type', 'image/svg+xml')
   fs.createReadStream(file).pipe(response)
 }
 
