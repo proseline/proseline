@@ -29,7 +29,6 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     if (pathname === '/') return serveHomepage(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
-    if (pathname === '/client.js') return serveScript(request, response)
     if (pathname === '/subscribe.js') return serveScript(request, response)
     if (pathname === '/authenticate.js') return serveScript(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
