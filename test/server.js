@@ -23,8 +23,6 @@ module.exports = callback => {
       cleanup()
       throw error
     }
-    directory = tmp
-    process.env.DIRECTORY = path.join(tmp, 'indexes')
     webServer = http.createServer((request, response) => {
       addLoggers(request, response)
       handle(request, response)

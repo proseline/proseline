@@ -1,6 +1,7 @@
-const fs = require('fs')
+const assert = require('assert')
 const lock = require('lock').Lock()
 const path = require('path')
+const s3 = require('./s3')
 
 module.exports = {
   account: simpleFiles('accounts'),
@@ -13,6 +14,8 @@ module.exports = {
 const account = module.exports.account
 
 account.confirm = (handle, callback) => {
+  assert(typeof handle === 'string')
+  assert(typeof callback === 'function')
   const properties = { confirmed: new Date().toISOString() }
   account.update(handle, properties, callback)
 }
@@ -20,6 +23,8 @@ account.confirm = (handle, callback) => {
 const token = module.exports.token
 
 token.use = (id, callback) => {
+  assert(typeof id === 'string')
+  assert(typeof callback === 'function')
   const file = token.filePath(id)
   lock(file, unlock => {
     callback = unlock(callback)
@@ -36,47 +41,43 @@ token.use = (id, callback) => {
   })
 }
 
-function simpleFiles (subdirectory, options) {
-  options = options || {}
-  const serialization = options.serialization
-  const complexID = options.complexID
-  const filePath = complexID
-    ? id => path.join(process.env.DIRECTORY, subdirectory, complexID(id) + '.json')
-    : id => path.join(process.env.DIRECTORY, subdirectory, id + '.json')
+function simpleFiles (subdirectory) {
+  assert(typeof subdirectory === 'string')
+  const serialization = JSON
+  const filePath = id => path.join(subdirectory, id)
   return {
     write: (id, value, callback) => {
+      assert(typeof id === 'string')
+      assert(value !== undefined)
+      assert(typeof callback === 'function')
       lock(filePath(id), unlock => writeWithoutLocking(id, value, unlock(callback)))
     },
     writeWithoutLocking,
     read: (id, callback) => {
+      assert(typeof id === 'string')
+      assert(typeof callback === 'function')
       lock(filePath(id), unlock => readWithoutLocking(id, unlock(callback)))
     },
     readWithoutLocking,
-    createRawReadStream: id => {
-      return fs.createReadStream(filePath(id), 'utf8')
-    },
     exists: (id, callback) => {
-      fs.access(filePath(id), error => {
-        if (error) {
-          if (error.code === 'ENOENT') {
-            return callback(null, false)
-          }
-          /* istanbul ignore next */
-          return callback(error)
-        }
-        callback(null, true)
-      })
+      assert(typeof id === 'string')
+      assert(typeof callback === 'function')
+      const file = filePath(id)
+      lock(file, unlock => s3.exists(file, unlock(callback)))
     },
     update: (id, properties, callback) => {
+      assert(typeof id === 'string')
+      assert(typeof properties === 'object')
+      assert(typeof callback === 'function')
       const file = filePath(id)
       lock(file, unlock => {
         callback = unlock(callback)
-        readFile({ file, serialization }, (error, record) => {
+        get({ file, serialization }, (error, record) => {
           /* istanbul ignore if */
           if (error) return callback(error)
           if (!record) return callback(null, null)
           Object.assign(record, properties)
-          writeFile({ file, data: record, serialization }, error => {
+          put({ file, data: record, serialization }, error => {
             /* istanbul ignore if */
             if (error) return callback(error)
             callback(null, record)
@@ -85,15 +86,13 @@ function simpleFiles (subdirectory, options) {
       })
     },
     list: callback => {
+      assert(typeof callback === 'function')
       const directory = path.dirname(filePath('x'))
-      fs.readdir(directory, (error, entries) => {
-        /* istanbul ignore if */
-        if (error) return callback(error)
-        const ids = entries.map(entry => path.basename(entry, '.json'))
-        callback(null, ids)
-      })
+      s3.list(directory, callback)
     },
     delete: (id, callback) => {
+      assert(typeof id === 'string')
+      assert(typeof callback === 'function')
       lock(filePath(id), unlock => deleteWithoutLocking(id, unlock(callback)))
     },
     deleteWithoutLocking,
@@ -101,21 +100,23 @@ function simpleFiles (subdirectory, options) {
   }
 
   function writeWithoutLocking (id, value, callback) {
+    assert(typeof id === 'string')
+    assert(value !== undefined)
+    assert(typeof callback === 'function')
     const file = filePath(id)
-    const directory = path.dirname(file)
-    fs.mkdir(directory, { recursive: true }, error => {
-      /* istanbul ignore if */
-      if (error) return callback(error)
-      writeFile({ file, data: value, serialization }, callback)
-    })
+    put({ file, data: value, serialization }, callback)
   }
 
   function readWithoutLocking (id, callback) {
-    readFile({ file: filePath(id), serialization }, callback)
+    assert(typeof id === 'string')
+    assert(typeof callback === 'function')
+    get({ file: filePath(id), serialization }, callback)
   }
 
   function deleteWithoutLocking (id, callback) {
-    fs.unlink(filePath(id), error => {
+    assert(typeof id === 'string')
+    assert(typeof callback === 'function')
+    s3.delete(filePath(id), error => {
       if (error && error.code === 'ENOENT') return callback()
       /* istanbul ignore next */
       return callback(error)
@@ -123,15 +124,13 @@ function simpleFiles (subdirectory, options) {
   }
 }
 
-function readFile (options, callback) {
-  const file = options.file
-  const serialization = options.serialization || JSON
-  fs.readFile(file, (error, data) => {
-    if (error) {
-      if (error.code === 'ENOENT') return callback(null, null)
-      /* istanbul ignore next */
-      return callback(error)
-    }
+function get ({ file, serialization = JSON }, callback) {
+  assert(typeof file === 'string')
+  assert(typeof serialization.parse === 'function')
+  assert(typeof callback === 'function')
+  s3.get(file, (error, data) => {
+    if (error) return callback(error)
+    if (data === undefined) return callback(null, undefined)
     let parsed
     try {
       parsed = serialization.parse(data)
@@ -143,18 +142,10 @@ function readFile (options, callback) {
   })
 }
 
-function writeFile (options, callback) {
-  const file = options.file
-  const data = options.data
-  const serialization = options.serialization || JSON
-  const flag = options.flag || 'w'
+function put ({ file, data, serialization = JSON }, callback) {
+  assert(typeof file === 'string')
+  assert(data !== undefined)
+  assert(typeof serialization.stringify === 'function')
   const stringified = serialization.stringify(data)
-  fs.writeFile(file, stringified, { flag }, error => {
-    if (error) {
-      if (error.code === 'EEXIST') return callback(null, false)
-      /* istanbul ignore next */
-      return callback(error, false)
-    }
-    callback(null, true)
-  })
+  s3.put(file, stringified, callback)
 }

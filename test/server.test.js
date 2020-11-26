@@ -1,12 +1,11 @@
 const csrf = require('../csrf')
 const fs = require('fs')
-const rimraf = require('rimraf')
 const runSeries = require('run-series')
 const spawn = require('child_process').spawn
 const tape = require('tape')
 
 tape('server', test => {
-  fs.mkdtemp('/tmp/', (_, directory) => {
+  fs.mkdtemp('/tmp/', (_) => {
     let server, curl
     const serverPort = 8080
     runSeries([
@@ -17,7 +16,6 @@ tape('server', test => {
             NODE_ENV: 'test',
             BASE_HREF: 'http://localhost:' + serverPort + '/',
             CSRF_KEY: csrf.randomKey(),
-            DIRECTORY: directory,
             STRIPE_PLAN: process.env.STRIPE_PLAN,
             STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
             STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY
@@ -42,7 +40,6 @@ tape('server', test => {
           )
           server.kill(9)
           curl.kill(9)
-          rimraf.sync(directory)
           test.end()
         })
     })
