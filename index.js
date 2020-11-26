@@ -1484,7 +1484,7 @@ function serveStripeWebhook (request, response) {
       request.log.info({
         customerID, subscriptionID
       }, 'Stripe Checkout completed')
-      stripe.customers.retrieve(customerID, (error, customer) => {
+      return stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
         const handle = customer.metadata.handle
@@ -1504,7 +1504,7 @@ function serveStripeWebhook (request, response) {
       request.log.info({
         customerID, subscriptionID
       }, 'Stripe subscription canceled')
-      stripe.customers.retrieve(customerID, (error, customer) => {
+      return stripe.customers.retrieve(customerID, (error, customer) => {
         if (error) return fail(error)
         request.log.info({ customer }, 'customer')
         const handle = customer.metadata.handle
