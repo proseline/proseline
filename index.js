@@ -1303,6 +1303,7 @@ function serveSubscribe (request, response) {
             }
           ],
           mode: 'subscription',
+          allow_promotion_codes: true,
           success_url: `${process.env.BASE_HREF}/subscribed?sessionID={CHECKOUT_SESSION_ID}`,
           cancel_url: `${process.env.BASE_HREF}/subscribe`
         }, (error, session) => {
