@@ -1449,7 +1449,7 @@ function serveSubscription (request, response) {
 
 function serveStripeWebhook (request, response) {
   const signature = request.headers['stripe-signature']
-  simpleConcatLimit(request, 4096, (error, buffer) => {
+  simpleConcatLimit(request, 8192, (error, buffer) => {
     if (error) {
       response.statusCode = 500
       return response.end()
