@@ -1495,6 +1495,16 @@ function serveStripeWebhook (request, response) {
             if (error) return fail(error)
             response.statusCode = 200
             response.end()
+            if (process.env.ADMIN_EMAIL) {
+              const email = customer.email
+              mail({
+                to: process.env.ADMIN_EMAIL,
+                subject: 'Subscribed',
+                text: `Handle: ${handle}\nE-Mail: ${email}\n`
+              }, error => {
+                if (error) request.log.error(error)
+              })
+            }
           }
         )
       })
@@ -1515,6 +1525,16 @@ function serveStripeWebhook (request, response) {
             if (error) return fail(error)
             response.statusCode = 200
             response.end()
+            if (process.env.ADMIN_EMAIL) {
+              const email = customer.email
+              mail({
+                to: process.env.ADMIN_EMAIL,
+                subject: 'Unsubscribed',
+                text: `Handle: ${handle}\nE-Mail: ${email}\n`
+              }, error => {
+                if (error) request.log.error(error)
+              })
+            }
           }
         )
       })
