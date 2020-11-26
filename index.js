@@ -1290,6 +1290,7 @@ function serveSubscribe (request, response) {
           done()
         })
       },
+      // Create a Stripe Checkout session.
       done => {
         stripe.checkout.sessions.create({
           customer: customerID,
