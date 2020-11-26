@@ -17,7 +17,7 @@ module.exports = (handle, password, callback) => {
         error.statusCode = 500
         return callback(error)
       }
-      if (account === null || account.confirmed === false) {
+      if (!account || account.confirmed === false) {
         const invalid = new Error('invalid handle or password')
         invalid.statusCode = 401
         return callback(invalid, account)
