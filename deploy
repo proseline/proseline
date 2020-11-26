@@ -1,4 +1,5 @@
 #!/bin/sh
+git push origin master
 ssh proseline.com <<'SCRIPT'
 cd proseline
 old_hash="$(shasum package-lock.json)"
