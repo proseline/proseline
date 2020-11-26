@@ -1446,7 +1446,7 @@ function serveSubscription (request, response) {
       <form id=unsubscribeForm method=post>
         ${data.error}
         ${data.csrf}
-        <button type=submit>${title}</button>
+        <button type=submit>Unsubscribe</button>
       </form>
     </main>
     ${footer}
