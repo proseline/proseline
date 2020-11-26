@@ -8,8 +8,8 @@ module.exports = (handle, password, callback) => {
   assert(typeof handle === 'string')
   assert(typeof password === 'string')
   assert(typeof callback === 'function')
-  const file = storage.account.key(handle)
-  storage.lock(file, unlock => {
+  const key = storage.account.key(handle)
+  storage.lock(key, unlock => {
     callback = unlock(callback)
     storage.account.readWithoutLocking(handle, function (error, account) {
       /* istanbul ignore next */
