@@ -2,6 +2,7 @@ const assert = require('assert')
 
 exports.DELIMITER = '/'
 
+// This in-memory Map stores all of the data.
 let data
 exports.clear = () => { data = new Map() }
 exports.clear()

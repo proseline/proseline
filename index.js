@@ -426,9 +426,7 @@ function serveLogIn (request, response) {
     `
   }
 
-  function processBody (request, body, done) {
-    const { handle, password } = body
-
+  function processBody (request, { handle, password }, done) {
     let sessionID
     runSeries([
       authenticate,

@@ -6,6 +6,9 @@ const Bucket = process.env.S3_BUCKET
 const ServerSideEncryption = 'AES256'
 
 const s3 = new AWS.S3({
+  // Explicit specifying the S3 endpoint allows this module
+  // to connect to other S3-compatible data stores, like
+  // DigitalOcean spaces or Backblaze.
   endpoint: new AWS.Endpoint(process.env.S3_ENDPOINT),
   accessKeyId: process.env.S3_ACCESS_KEY,
   secretAccessKey: process.env.S3_SECRET_KEY
