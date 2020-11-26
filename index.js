@@ -503,7 +503,7 @@ function serveLogOut (request, response) {
     return serve405(request, response)
   }
   const body = {}
-  const fields = ['csrftoken', 'csrfnonce']
+  const fields = csrf.names
   request.pipe(
     new Busboy({
       headers: request.headers,
@@ -523,8 +523,8 @@ function serveLogOut (request, response) {
     csrf.verify({
       action: '/logout',
       sessionID: request.session.id,
-      token: body.csrftoken,
-      nonce: body.csrfnonce
+      token: body[csrf.tokenName],
+      nonce: body[csrf.nonceName]
     }, error => {
       if (error) return redirect()
       clearCookie(response)
@@ -902,10 +902,8 @@ function invalidToken (request, response) {
 function postPassword (request, response) {
   let handle
   const body = {}
-  const fieldNames = [
-    'password', 'repeat', 'token', 'old',
-    'csrftoken', 'csrfnonce'
-  ]
+  const fieldNames = ['password', 'repeat', 'token', 'old']
+  fieldNames.push(...csrf.names)
   runSeries([
     readPostBody,
     validateInputs,
@@ -990,8 +988,8 @@ function postPassword (request, response) {
     csrf.verify({
       action: '/password',
       sessionID: request.session.id,
-      token: body.csrftoken,
-      nonce: body.csrfnonce
+      token: body[csrf.tokenName],
+      nonce: body[csrf.nonceName]
     }, done)
   }
 
@@ -1714,7 +1712,7 @@ function formRoute ({
           limits: {
             fieldNameSize: Math.max(
               fieldNames
-                .concat('csrftoken', 'csrfnonce')
+                .concat(csrf.names)
                 .map(n => n.length)
             ),
             fields: fieldNames.length + 2,
@@ -1723,7 +1721,7 @@ function formRoute ({
           }
         })
           .on('field', function (name, value, truncated, encoding, mime) {
-            if (name === 'csrftoken' || name === 'csrfnonce') {
+            if (name === csrf.tokenName || name === csrf.nonceName) {
               body[name] = value
               return
             }
@@ -1750,8 +1748,8 @@ function formRoute ({
       csrf.verify({
         action,
         sessionID: request.session.id,
-        token: body.csrftoken,
-        nonce: body.csrfnonce
+        token: body[csrf.tokenName],
+        nonce: body[csrf.nonceName]
       }, done)
     }
 

@@ -28,6 +28,11 @@ exports.generate = ({
   }
 }
 
+const tokenName = exports.tokenName = 'csrftoken'
+const nonceName = exports.nonceName = 'csrfnonce'
+
+exports.names = [tokenName, nonceName]
+
 // Generate hidden HTML form inputs.
 exports.inputs = ({ action, sessionID }) => {
   assert(typeof action === 'string')
@@ -35,8 +40,8 @@ exports.inputs = ({ action, sessionID }) => {
 
   const generated = exports.generate({ action, sessionID })
   return `
-    <input type=hidden name=csrftoken value="${generated.token}">
-    <input type=hidden name=csrfnonce value="${generated.nonce}">
+    <input type=hidden name=${tokenName} value="${generated.token}">
+    <input type=hidden name=${nonceName} value="${generated.nonce}">
   `
 }
 
