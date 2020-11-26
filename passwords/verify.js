@@ -1,10 +1,10 @@
 // Verify submitted passwords against stored hashes.
 
 const assert = require('assert')
-const expired = require('./expired')
-const storage = require('./storage')
-const passwordHashing = require('./password-hashing')
+const expired = require('../expired')
+const scheme = require('./scheme')
 const securePassword = require('secure-password')
+const storage = require('../storage')
 
 module.exports = (handle, password, callback) => {
   assert(typeof handle === 'string')
@@ -32,7 +32,7 @@ module.exports = (handle, password, callback) => {
       }
       const passwordHash = Buffer.from(account.passwordHash, 'hex')
       const passwordBuffer = Buffer.from(password, 'utf8')
-      passwordHashing.verify(
+      scheme.verify(
         passwordBuffer, passwordHash, (verifyError, result) => {
           /* istanbul ignore next */
           if (verifyError) {
@@ -52,7 +52,7 @@ module.exports = (handle, password, callback) => {
               return callback(error, account)
             /* istanbul ignore next */
             case securePassword.VALID_NEEDS_REHASH:
-              return passwordHashing.hash(passwordBuffer, (error, newHash) => {
+              return scheme.hash(passwordBuffer, (error, newHash) => {
                 if (error) {
                   error.statusCode = 500
                   return callback(error)
