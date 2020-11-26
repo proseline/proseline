@@ -573,7 +573,7 @@ function serveAccount (request, response) {
           <td class=email>${escapeHTML(account.email)}</td>
         </tr>
         <tr>
-          <th>signed Up</th>
+          <th>Signed Up</th>
           <td class=signedup>${escapeHTML(new Date(account.created).toISOString())}</td>
         </tr>
       </table>
