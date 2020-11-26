@@ -29,8 +29,6 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     if (pathname === '/') return serveHomepage(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
-    if (pathname === '/subscribe.js') return serveScript(request, response)
-    if (pathname === '/authenticate.js') return serveScript(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
@@ -153,13 +151,6 @@ function serveHomepage (request, response) {
 function serveStyles (request, response) {
   const file = path.join(__dirname, 'styles.css')
   response.setHeader('Content-Type', 'text/css')
-  fs.createReadStream(file).pipe(response)
-}
-
-function serveScript (request, response) {
-  const basename = path.basename(request.parsed.pathname)
-  const file = path.join(__dirname, basename)
-  response.setHeader('Content-Type', 'text/javascript')
   fs.createReadStream(file).pipe(response)
 }
 
