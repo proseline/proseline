@@ -30,6 +30,7 @@ module.exports = (request, response) => {
     if (pathname === '/') return serveHomepage(request, response)
     if (pathname === '/styles.css') return serveStyles(request, response)
     if (pathname === '/logo.svg') return serveLogo(request, response)
+    if (pathname === '/logo-500.png') return servePNG(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
@@ -52,6 +53,9 @@ module.exports = (request, response) => {
 }
 
 // Partials
+const brandName = 'Proseline'
+const socialImage = `${process.env.BASE_HREF}/logo-500.png`
+const tagline = 'write nice together'
 
 const meta = html`
 <meta charset=UTF-8>
@@ -59,11 +63,24 @@ const meta = html`
 <link href=/styles.css rel=stylesheet>
 `
 
-const titleSuffix = ' / Proseline'
+const socialMeta = html`
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="${brandName}">
+<meta name="twitter:description" content="${tagline}">
+<meta name="twitter:image" content="${socialImage}">
+<meta name="twitter:creator" content="@arltessdevices">
+<meta name="og:type" content="website">
+<meta name="og:title" content="${brandName}">
+<meta name="og:description" content="${tagline}">
+<meta name="og:image" content="${socialImage}">
+`
+
+const titleSuffix = ` / ${brandName}`
 
 const header = `<header role=banner>
   <img class=logo src=/logo.svg alt=logo>
-  <h1>Proseline</h1>
+  <h1>${brandName}</h1>
+  <p class=tagline>${tagline}</p>
 </header>`
 
 const footer = `
@@ -141,7 +158,8 @@ function serveHomepage (request, response) {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>Proseline</title>
+    ${socialMeta}
+    <title>${brandName}</title>
   </head>
   <body>
     ${header}
@@ -162,6 +180,12 @@ function serveStyles (request, response) {
 function serveLogo (request, response) {
   const file = path.join(__dirname, 'logo.svg')
   response.setHeader('Content-Type', 'image/svg+xml')
+  fs.createReadStream(file).pipe(response)
+}
+
+function servePNG (request, response) {
+  const file = path.join(__dirname, request.pathname)
+  response.setHeader('Content-Type', 'image/png')
   fs.createReadStream(file).pipe(response)
 }
 
