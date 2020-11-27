@@ -1605,6 +1605,11 @@ route('/robots.txt', (request, response) => {
   return response.end('User-agent: *\nDisallow: /')
 })
 
+route('/public-key', (request, response) => {
+  response.setHeader('Content-Type', 'application/octet-stream')
+  response.end(process.env.PUBLIC_KEY)
+})
+
 if (!inProduction) {
   route('/internal-error', (request, response) => {
     const testError = new Error('test error')

@@ -1,4 +1,5 @@
 const assert = require('assert')
+const crypto = require('../crypto')
 const csrf = require('../csrf')
 const fs = require('fs')
 const handle = require('../')
@@ -15,6 +16,9 @@ module.exports = callback => {
   const logger = pino({}, fs.createWriteStream('test-server.log'))
   const addLoggers = pinoHTTP({ logger })
   process.env.CSRF_KEY = csrf.randomKey()
+  const keyPair = crypto.keyPair()
+  process.env.PUBLIC_KEY = keyPair.publicKey
+  process.env.SECRET_KEY = keyPair.secretKey
   let webServer
   let stripeCLI
   fs.mkdtemp(path.join(os.tmpdir(), 'proseline-'), (error, tmp) => {

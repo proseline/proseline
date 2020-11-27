@@ -5,6 +5,8 @@ module.exports = () => {
     'NODE_ENV',
     'BASE_HREF',
     'CSRF_KEY',
+    'PUBLIC_KEY',
+    'SECRET_KEY',
     'STRIPE_PLAN',
     'STRIPE_PUBLISHABLE_KEY',
     'STRIPE_SECRET_KEY',

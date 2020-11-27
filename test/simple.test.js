@@ -50,6 +50,13 @@ simple({
   content: 'Disallow: /'
 })
 
+simple({
+  method: 'GET',
+  path: '/public-key',
+  status: 200,
+  mime: 'application/octet-stream'
+})
+
 function simple ({
   auth,
   method = 'GET',
