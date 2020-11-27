@@ -13,6 +13,7 @@ const mail = require('./mail')
 const notify = require('./notify')
 const parseURL = require('url-parse')
 const path = require('path')
+const runAuto = require('run-auto')
 const runParallel = require('run-parallel')
 const runParallelLimit = require('run-parallel-limit')
 const runSeries = require('run-series')
@@ -29,8 +30,13 @@ const brandName = 'Proseline'
 const tagline = 'write nice with others'
 
 const simpleRoutes = new Map() // pathname -> f(request, response)
-function route (pathname, handler) {
-  simpleRoutes.set(pathname, handler)
+const patternRoutes = []
+function route (path, handler) {
+  if (Object.prototype.toString.call(path) === '[object RegExp]') {
+    patternRoutes.push([path, handler])
+  } else {
+    simpleRoutes.set(path, handler)
+  }
 }
 
 module.exports = (request, response) => {
@@ -39,6 +45,14 @@ module.exports = (request, response) => {
     const pathname = parsed.pathname
     const simpleRoute = simpleRoutes.get(pathname)
     if (simpleRoute) return simpleRoute(request, response)
+    for (let index = 0; index < patternRoutes.length; index++) {
+      const route = patternRoutes[index]
+      const match = route[0].exec(pathname)
+      if (match) {
+        request.match = match
+        return route[1](request, response)
+      }
+    }
     serve404(request, response)
   })
 }
@@ -62,6 +76,7 @@ const socialMeta = html`
 <meta name="og:title" content="${brandName}">
 <meta name="og:description" content="${tagline}">
 <meta name="og:image" content="${socialImage}">
+<meta name="og:site_name" content="${brandName}">
 `
 
 const titleSuffix = ` / ${brandName}`
@@ -1648,6 +1663,70 @@ route('/projects', (request, response) => {
     response.end()
   }
 })
+
+route(
+  /^\/projects\/([a-f0-9]{64})$/,
+  (request, response) => {
+    if (request.method !== 'GET') return serve405(request, response)
+    const discoveryKey = request.match[1]
+    const tasks = {
+      project: done => storage.project.read(discoveryKey, done),
+      creatorProject: ['project', (results, done) => {
+        storage.accountProject.read(
+          results.project.creator,
+          discoveryKey,
+          done
+        )
+      }]
+    }
+    if (request.account) {
+      tasks.userProject = ['project', (results, done) => {
+        storage.accountProject.read(
+          request.account.handle,
+          discoveryKey,
+          done
+        )
+      }]
+    }
+    runAuto(tasks, (error, data) => {
+      if (error) {
+        if (error.statusCode === 404) {
+          return serve404(request, response)
+        }
+        return serve500(request, response, error)
+      }
+      const title = data.userProject
+        ? data.userProject.title
+        : data.creatorProject.title
+      response.setHeader('Content-Type', 'text/html')
+      response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="${title}">
+    <meta name="twitter:description" content="${tagline}">
+    <meta name="twitter:image" content="${socialImage}">
+    <meta name="og:title" content="${title}">
+    <meta name="og:description" content="${tagline}">
+    <meta name="og:image" content="${socialImage}">
+    <meta name="og:site_name" content="${brandName}">
+    <title>${title}${titleSuffix}</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h1>${title}</h1>
+    </main>
+    ${footer}
+  </body>
+</html>
+      `)
+    })
+  }
+)
 
 route('/stripe-webhook', (request, response) => {
   const signature = request.headers['stripe-signature']
