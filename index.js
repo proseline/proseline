@@ -34,6 +34,7 @@ module.exports = (request, response) => {
     if (pathname === '/styles.css') return serveStyles(request, response)
     if (pathname === '/logo.svg') return serveLogo(request, response)
     if (pathname === '/logo-500.png') return servePNG(request, response)
+    if (pathname === '/logo-1000.png') return servePNG(request, response)
     if (pathname === '/signup') return serveSignUp(request, response)
     if (pathname === '/login') return serveLogIn(request, response)
     if (pathname === '/logout') return serveLogOut(request, response)
