@@ -31,6 +31,13 @@ module.exports = {
       },
       read: (handle, discoveryKey, callback) => {
         s3.get(keyFor(handle, discoveryKey), callback)
+      },
+      list: (handle, callback) => {
+        const directory = path.dirname(keyFor(handle, 'x'))
+        s3.list(directory, (error, keys) => {
+          if (error) return callback(error)
+          callback(null, keys.map(key => path.basename(key)))
+        })
       }
     }
     function keyFor (handle, discoveryKey) {

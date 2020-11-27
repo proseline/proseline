@@ -14,6 +14,7 @@ const notify = require('./notify')
 const parseURL = require('url-parse')
 const path = require('path')
 const runParallel = require('run-parallel')
+const runParallelLimit = require('run-parallel-limit')
 const runSeries = require('run-series')
 const simpleConcatLimit = require('simple-concat-limit')
 const storage = require('./storage')
@@ -143,8 +144,24 @@ function logoutButton (request) {
 route('/', (request, response) => {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
-  response.setHeader('Content-Type', 'text/html')
-  response.end(html`
+  const tasks = {}
+  if (request.account) {
+    tasks.projects = done => storage.accountProject.list(
+      request.account.handle,
+      (error, discoveryKeys) => {
+        if (error) return done(error)
+        runParallelLimit(
+          discoveryKeys.map(key => storage.project.read(key, done)),
+          3,
+          done
+        )
+      }
+    )
+  }
+  runParallel(tasks, (error, data) => {
+    if (error) return serve500(request, response, error)
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
 <!doctype html>
 <html lang=en-US>
   <head>
@@ -155,12 +172,27 @@ route('/', (request, response) => {
   <body>
     ${header}
     ${nav(request)}
-    <main role=main></main>
+    <main role=main>
+    ${data.projects && projectsList(data.projects)}
+    </main>
     ${footer}
   </body>
 </html>
-  `)
+    `)
+  })
 })
+
+function projectsList (projects) {
+  projects.sort((a, b) => a.created.localeCompare(b.created))
+  return html`
+<h2>Projects</h2>
+<ul>
+  ${projects.map(project => html`
+  <li><a href="/projects/${project.discoveryKey}">${project.title}</a></li>
+  `)}
+</ul>
+  `
+}
 
 route('/styles.css', (request, response) => {
   const file = path.join(__dirname, 'styles.css')
