@@ -146,12 +146,13 @@ route('/', (request, response) => {
   doNotCache(response)
   const tasks = {}
   if (request.account) {
+    const { handle } = request.account
     tasks.projects = done => storage.accountProject.list(
-      request.account.handle,
+      handle,
       (error, discoveryKeys) => {
         if (error) return done(error)
         runParallelLimit(
-          discoveryKeys.map(key => done => storage.project.read(key, done)),
+          discoveryKeys.map(key => done => storage.accountProject.read(handle, key, done)),
           3,
           done
         )
@@ -1504,7 +1505,7 @@ route('/subscription', (request, response) => {
 })
 
 route('/projects', (request, response) => {
-  const title = 'New Project'
+  const routeTitle = 'New Project'
   const fields = {
     title: { validate: s => s.length > 0 }
   }
@@ -1524,13 +1525,13 @@ route('/projects', (request, response) => {
 <html lang=en-US>
   <head>
     ${meta}
-    <title>${title}${titleSuffix}</title>
+    <title>${routeTitle}${titleSuffix}</title>
   </head>
   <body>
     ${header}
     ${nav(request)}
     <main role=main>
-      <h2>${title}</h2>
+      <h2>${routeTitle}</h2>
       <form id=projectForm method=post>
         ${data.error}
         ${data.csrf}
@@ -1588,6 +1589,7 @@ route('/projects', (request, response) => {
     function addProjectToAccount (done) {
       storage.accountProject.write(handle, discoveryKey, {
         handle,
+        title,
         discoveryKey,
         journalKeyPair,
         created
