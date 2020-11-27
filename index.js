@@ -2,6 +2,7 @@
 
 const Busboy = require('busboy')
 const cookie = require('cookie')
+const crypto = require('./crypto')
 const csrf = require('./csrf')
 const doNotCache = require('do-not-cache')
 const escapeHTML = require('escape-html')
@@ -272,6 +273,7 @@ route('/signup', (request, response) => {
                 email,
                 passwordHash,
                 created: new Date().toISOString(),
+                keyPair: crypto.keyPair(),
                 confirmed: false,
                 failures: 0,
                 locked: false
