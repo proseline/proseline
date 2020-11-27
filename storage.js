@@ -1,6 +1,7 @@
 // Read, write, and index various data records.
 
 const assert = require('assert')
+const indices = require('./indices')
 const lock = require('lock').Lock()
 const path = require('path')
 const s3 = require('./s3')
@@ -10,6 +11,74 @@ module.exports = {
   email: simple('emails'),
   token: simple('tokens'),
   session: simple('sessions'),
+  project: (() => {
+    return {
+      write: (discoveryKey, value, callback) => {
+        s3.put(keyFor(discoveryKey), value, callback)
+      },
+      read: (discoveryKey, callback) => {
+        s3.get(keyFor(discoveryKey), callback)
+      }
+    }
+    function keyFor (discoveryKey) {
+      return path.join('projects', discoveryKey)
+    }
+  })(),
+  accountProject: (() => {
+    return {
+      write: (handle, discoveryKey, value, callback) => {
+        s3.put(keyFor(handle, discoveryKey), value, callback)
+      },
+      read: (handle, discoveryKey, callback) => {
+        s3.get(keyFor(handle, discoveryKey), callback)
+      }
+    }
+    function keyFor (handle, discoveryKey) {
+      return path.join('accountProjects', discoveryKey)
+    }
+  })(),
+  projectJournal: (() => {
+    return {
+      write: (discoveryKey, publicKey, value, callback) => {
+        s3.put(keyFor(discoveryKey, publicKey), value, callback)
+      },
+      read: (discoveryKey, publicKey, callback) => {
+        s3.get(keyFor(discoveryKey, publicKey), callback)
+      },
+      list: (discoveryKey, callback) => {
+        const directory = path.dirname(keyFor(discoveryKey, 'x'))
+        s3.list(directory, callback)
+      }
+    }
+    function keyFor (discoveryKey, journalPublicKey) {
+      return path.join('projectJournals', discoveryKey, journalPublicKey)
+    }
+  })(),
+  entry: (() => {
+    return {
+      write: (discoveryKey, publicKey, index, value, callback) => {
+        s3.put(keyFor(discoveryKey, publicKey, index), value, callback)
+      },
+      read: (discoveryKey, publicKey, index, callback) => {
+        s3.get(keyFor(discoveryKey, publicKey, index), callback)
+      },
+      list: (discoveryKey, publicKey, callback) => {
+        const directory = path.dirname(keyFor(discoveryKey, publicKey, 0))
+        s3.list(directory, (error, keys) => {
+          if (error) return callback(error)
+          callback(null, keys.map(key => indices.parse(key)))
+        })
+      }
+    }
+    function keyFor (discoveryKey, journalPublicKey, index) {
+      return path.join(
+        'entries',
+        discoveryKey,
+        journalPublicKey,
+        indices.stringify(index)
+      )
+    }
+  })(),
   lock
 }
 

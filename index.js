@@ -87,6 +87,7 @@ function nav (request) {
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && !account.subscriptionID && subscribeButton(request)}
   ${handle && account.subscriptionID && manageSubscriptionButton(request)}
+  ${handle && account.subscriptionID && '<a id=project class=button href=/projects>New Project</a>'}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
@@ -1457,8 +1458,6 @@ route('/subscription', (request, response) => {
     ${nav(request)}
     <main role=main>
       <h2>${title}</h2>
-      <div id=card></div>
-      <div id=errors></div>
       <form id=unsubscribeForm method=post>
         ${data.error}
         ${data.csrf}
@@ -1469,6 +1468,150 @@ route('/subscription', (request, response) => {
   </body>
 </html>
     `)
+  }
+})
+
+route('/projects', (request, response) => {
+  const title = 'New Project'
+  const fields = {
+    title: { validate: s => s.length > 0 }
+  }
+  formRoute({
+    action: '/projects',
+    requireAuthentication: true,
+    form,
+    fields,
+    processBody,
+    onSuccess
+  })(request, response)
+
+  function form (request, data) {
+    response.setHeader('Content-Type', 'text/html')
+    response.end(html`
+<!doctype html>
+<html lang=en-US>
+  <head>
+    ${meta}
+    <title>${title}${titleSuffix}</title>
+  </head>
+  <body>
+    ${header}
+    ${nav(request)}
+    <main role=main>
+      <h2>${title}</h2>
+      <form id=projectForm method=post>
+        ${data.error}
+        ${data.csrf}
+        <p>
+          <label for=title>Title</label>
+          <input
+              name=title
+              type=text
+              required
+              value="${escapeHTML(data.title.value)}"
+              autofocus>
+        </p>
+        ${data.title.error}
+        <button type=submit>Create Project</button>
+      </form>
+    </main>
+    ${footer}
+  </body>
+</html>
+    `)
+  }
+
+  function processBody (request, { title }, done) {
+    const handle = request.account.handle
+    const created = new Date().toISOString()
+    // Generate project keys.
+    const distributionKey = crypto.encryptionKey()
+    const discoveryKey = crypto.discoveryKey(distributionKey)
+    const projectKeyPair = crypto.keyPair()
+    const encryptionKey = crypto.encryptionKey()
+    // Generate journal keys.
+    const journalKeyPair = crypto.keyPair()
+
+    runParallel([
+      storeProjectKeys,
+      addProjectToAccount,
+      addJournalToProject,
+      publishIntroduction
+    ], error => {
+      if (error) return done(error)
+      done(null, discoveryKey)
+    })
+
+    function storeProjectKeys (done) {
+      storage.project.write(discoveryKey, {
+        discoveryKey,
+        distributionKey,
+        encryptionKey,
+        projectKeyPair,
+        created,
+        creator: handle
+      }, done)
+    }
+
+    function addProjectToAccount (done) {
+      storage.accountProject.write(handle, discoveryKey, {
+        handle,
+        discoveryKey,
+        journalKeyPair,
+        created
+      }, done)
+    }
+
+    function addJournalToProject (done) {
+      storage.projectJournal.write(
+        discoveryKey,
+        journalKeyPair.publicKey,
+        {
+          discoveryKey,
+          keyPair: journalKeyPair,
+          created,
+          handle
+        },
+        done
+      )
+    }
+
+    function publishIntroduction (done) {
+      const index = 0
+      const entry = {
+        version: '1.0.0-pre',
+        discoveryKey,
+        index,
+        type: 'intro',
+        name: handle,
+        device: 'proseline.com',
+        timestamp: new Date().toISOString()
+      }
+      let envelope
+      try {
+        envelope = crypto.envelope({
+          journalKeyPair,
+          projectKeyPair,
+          encryptionKey,
+          entry
+        })
+      } catch (error) {
+        return done(error)
+      }
+      storage.entry.write(
+        discoveryKey,
+        journalKeyPair.publicKey,
+        index,
+        envelope,
+        done
+      )
+    }
+  }
+
+  function onSuccess (request, response, body, discoveryKey) {
+    response.statusCode = 303
+    response.setHeader('Location', `/projects/${discoveryKey}`)
+    response.end()
   }
 })
 
