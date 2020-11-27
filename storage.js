@@ -41,7 +41,7 @@ module.exports = {
       }
     }
     function keyFor (handle, discoveryKey) {
-      return path.join('accountProjects', discoveryKey)
+      return path.join('accountProjects', handle, discoveryKey)
     }
   })(),
   projectJournal: (() => {
