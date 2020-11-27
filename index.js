@@ -344,7 +344,13 @@ function serveSignUp (request, response) {
           subject: 'Sign Up',
           text: `Handle: ${handle}\nE-Mail: ${email}\n`
         }, error => {
-          if (error) request.log.error(error)
+          if (error) {
+            if (error.statusCode && error.statusCode >= 400 && error.statusCode < 500) {
+              request.log.info(error)
+            } else {
+              request.log.error(error)
+            }
+          }
           done()
         })
       }
