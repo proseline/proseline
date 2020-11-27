@@ -23,6 +23,9 @@ const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
 
 const inProduction = process.env.NODE_ENV === 'production'
 
+const brandName = 'Proseline'
+const tagline = 'write nice with others'
+
 module.exports = (request, response) => {
   const parsed = request.parsed = parseURL(request.url, true)
   authenticate(request, response, () => {
@@ -44,6 +47,10 @@ module.exports = (request, response) => {
     if (pathname === '/subscribed') return serveSubscribed(request, response)
     if (pathname === '/subscription') return serveSubscription(request, response)
     if (pathname === '/stripe-webhook') return serveStripeWebhook(request, response)
+    if (pathname === '/tagline') {
+      response.setHeader('Content-Type', 'text/plain')
+      return response.end(tagline)
+    }
     if (pathname === '/internal-error' && !inProduction) {
       const testError = new Error('test error')
       return serve500(request, response, testError)
@@ -53,9 +60,7 @@ module.exports = (request, response) => {
 }
 
 // Partials
-const brandName = 'Proseline'
 const socialImage = `${process.env.BASE_HREF}/logo-500.png`
-const tagline = 'write nice together'
 
 const meta = html`
 <meta charset=UTF-8>
