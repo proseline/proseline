@@ -33,7 +33,7 @@ module.exports = {
         s3.get(keyFor(handle, discoveryKey), callback)
       },
       list: (handle, callback) => {
-        const directory = path.dirname(keyFor(handle, 'x'))
+        const directory = path.dirname(keyFor(handle, 'x')) + '/'
         s3.list(directory, (error, keys) => {
           if (error) return callback(error)
           callback(null, keys.map(key => path.basename(key)))
@@ -53,7 +53,7 @@ module.exports = {
         s3.get(keyFor(discoveryKey, publicKey), callback)
       },
       list: (discoveryKey, callback) => {
-        const directory = path.dirname(keyFor(discoveryKey, 'x'))
+        const directory = path.dirname(keyFor(discoveryKey, 'x')) + '/'
         s3.list(directory, callback)
       }
     }
@@ -70,7 +70,7 @@ module.exports = {
         s3.get(keyFor(discoveryKey, publicKey, index), callback)
       },
       list: (discoveryKey, publicKey, callback) => {
-        const directory = path.dirname(keyFor(discoveryKey, publicKey, 0))
+        const directory = path.dirname(keyFor(discoveryKey, publicKey, 0)) + '/'
         s3.list(directory, (error, keys) => {
           if (error) return callback(error)
           callback(null, keys.map(key => indices.parse(key)))
@@ -164,7 +164,7 @@ function simple (subdirectory) {
     },
     list: callback => {
       assert(typeof callback === 'function')
-      const directory = path.dirname(keyFor('x'))
+      const directory = path.dirname(keyFor('x')) + '/'
       s3.list(directory, callback)
     },
     delete: (id, callback) => {
