@@ -1557,7 +1557,7 @@ route('/projects', (request, response) => {
     const handle = request.account.handle
     const created = new Date().toISOString()
     // Generate project keys.
-    const distributionKey = crypto.encryptionKey()
+    const distributionKey = crypto.distributionKey()
     const discoveryKey = crypto.discoveryKey(distributionKey)
     const projectKeyPair = crypto.keyPair()
     const encryptionKey = crypto.encryptionKey()

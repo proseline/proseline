@@ -24,6 +24,22 @@ function base64String (bytes) {
   return schema
 }
 
+const hexPattern = '^[a-f0-9]+$'
+
+function hexString (bytes) {
+  const schema = { type: 'string', pattern: hexPattern }
+  if (bytes) {
+    assert(Number.isSafeInteger(bytes))
+    assert(bytes > 0)
+    const length = Buffer.alloc(bytes).toString('hex').length
+    schema.minLength = length
+    schema.maxLength = length
+  } else {
+    schema.minLength = 1
+  }
+  return schema
+}
+
 // Helper Subschemas
 
 const index = { type: 'integer', minimum: 0 }
@@ -31,12 +47,12 @@ const name = { type: 'string', minLength: 1, maxLength: 256 }
 const timestamp = { type: 'string', format: 'date-time' }
 const text = { type: 'string', minLength: 1 }
 
-const digest = base64String(crypto.digestBytes)
-const discoveryKey = base64String(crypto.digestBytes)
-const distributionKey = base64String(crypto.distributionKeyBytes)
-const nonce = base64String(crypto.nonceBytes)
-const publicKey = base64String(crypto.publicKeyBytes)
-const signature = base64String(crypto.signatureByes)
+const digest = hexString(crypto.digestBytes)
+const discoveryKey = hexString(crypto.digestBytes)
+const distributionKey = hexString(crypto.distributionKeyBytes)
+const nonce = hexString(crypto.nonceBytes)
+const publicKey = hexString(crypto.publicKeyBytes)
+const signature = hexString(crypto.signatureByes)
 
 const encrypted = {
   type: 'object',
@@ -96,7 +112,7 @@ const mark = exports.mark = {
   properties: {
     type: { const: 'mark' },
     version: { const: '1.0.0-pre' },
-    identifier: base64String(4),
+    identifier: hexString(4),
     name,
     timestamp,
     draft: digest

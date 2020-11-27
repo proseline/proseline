@@ -5,11 +5,14 @@ const has = require('has')
 const sodium = require('sodium-universal')
 const stringify = require('./stringify')
 
-const BINARY_ENCODING = exports.binaryEncoding = 'base64'
+// Encodings
+
+const BINARY_ENCODING = 'hex'
+const CIPHERTEXT_ENCODING = 'base64'
 
 // Random Data
 
-function random (bytes) {
+function randomHex (bytes) {
   assert(Number.isInteger(bytes))
   assert(bytes > 0)
   const buffer = Buffer.alloc(bytes)
@@ -17,7 +20,17 @@ function random (bytes) {
   return buffer.toString(BINARY_ENCODING)
 }
 
-exports.random = random
+exports.randomHex = randomHex
+
+function randomCiphertext (bytes) {
+  assert(Number.isInteger(bytes))
+  assert(bytes > 0)
+  const buffer = Buffer.alloc(bytes)
+  sodium.randombytes_buf(buffer)
+  return buffer.toString(CIPHERTEXT_ENCODING)
+}
+
+exports.randomCiphertext = randomCiphertext
 
 // Hashing
 
@@ -48,7 +61,7 @@ const STREAM_KEY_BYTES =
 exports.distributionKeyBytes =
 sodium.crypto_stream_KEYBYTES
 
-exports.distributionKey = () => random(STREAM_KEY_BYTES)
+exports.distributionKey = () => randomHex(STREAM_KEY_BYTES)
 
 exports.discoveryKey = distributionKey => {
   assert(typeof distributionKey === 'string')
@@ -63,22 +76,24 @@ const SECRETBOX_KEY_BYTES =
 exports.encryptionKeyBytes =
 sodium.crypto_secretbox_KEYBYTES
 
-exports.encryptionKey = () => random(SECRETBOX_KEY_BYTES)
+exports.encryptionKey = () => randomHex(SECRETBOX_KEY_BYTES)
 
 const SECRETBOX_NONCE_BYTES =
 exports.nonceBytes =
 sodium.crypto_secretbox_NONCEBYTES
 
-exports.nonce = () => random(SECRETBOX_NONCE_BYTES)
+exports.nonce = () => randomHex(SECRETBOX_NONCE_BYTES)
 
 const SECRETBOX_MAC_BYTES =
 exports.encryptionMACBytes =
 sodium.crypto_secretbox_MACBYTES
 
+const ENCRYPTION_ENCODING = CIPHERTEXT_ENCODING
+
 const inputTypes = {
   JSON: 'json',
   String: 'utf8',
-  Binary: 'base64'
+  Binary: ENCRYPTION_ENCODING
 }
 
 Object.keys(inputTypes).forEach(suffix => {
@@ -102,11 +117,11 @@ function encrypt ({ plaintext, encoding, nonce, key }) {
     Buffer.from(nonce, BINARY_ENCODING),
     Buffer.from(key, BINARY_ENCODING)
   )
-  return ciphertextBuffer.toString(BINARY_ENCODING)
+  return ciphertextBuffer.toString(ENCRYPTION_ENCODING)
 }
 
 function decrypt ({ ciphertext, encoding, nonce, key }) {
-  const ciphertextBuffer = decode(ciphertext, BINARY_ENCODING)
+  const ciphertextBuffer = decode(ciphertext, ENCRYPTION_ENCODING)
   const plaintextBuffer = Buffer.alloc(
     ciphertextBuffer.length - SECRETBOX_MAC_BYTES
   )
@@ -126,7 +141,7 @@ const SIGN_SEED_BYTES =
 exports.keyPairSeedBytes =
 sodium.crypto_sign_SEEDBYTES
 
-exports.keyPairSeed = () => random(SIGN_SEED_BYTES)
+exports.keyPairSeed = () => randomHex(SIGN_SEED_BYTES)
 
 const SIGN_PUBLIC_KEY_BYTES =
 exports.publicKeyBytes =
@@ -198,7 +213,7 @@ function verify ({ message, encoding, signature, publicKey }) {
 
 function encode (buffer, encoding) {
   assert(Buffer.isBuffer(buffer))
-  if (encoding === 'base64' || encoding === 'utf8') {
+  if (encoding === BINARY_ENCODING || encoding === CIPHERTEXT_ENCODING || encoding === 'utf8') {
     return buffer.toString(encoding)
   }
   if (encoding === 'json') {
@@ -209,7 +224,7 @@ function encode (buffer, encoding) {
 
 function decode (message, encoding) {
   assert(message !== undefined)
-  if (encoding === 'base64' || encoding === 'utf8') {
+  if (encoding === BINARY_ENCODING || encoding === CIPHERTEXT_ENCODING || encoding === 'utf8') {
     return Buffer.from(message, encoding)
   }
   if (encoding === 'json') {
@@ -327,6 +342,20 @@ exports.verifyEnvelope = ({
   return errors
 }
 
+exports.decryptEntry = ({
+  envelope,
+  encryptionKey
+}) => {
+  assert(typeof envelope === 'object')
+  assert(typeof encryptionKey === 'string')
+
+  return exports.decryptJSON({
+    ciphertext: envelope.entry.ciphertext,
+    nonce: envelope.entry.nonce,
+    key: encryptionKey
+  })
+}
+
 // Invitations
 
 const invitationEncrypted = ['encryptionKey', 'secretKey', 'title']
@@ -384,14 +413,4 @@ exports.decryptInvitation = options => {
       key: encryptionKey
     })
   }
-}
-
-// Encoding
-
-exports.base64ToHex = base64 => {
-  return Buffer.from(base64, 'base64').toString('hex')
-}
-
-exports.hexToBase64 = base64 => {
-  return Buffer.from(base64, 'hex').toString('base64')
 }

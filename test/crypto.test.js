@@ -18,7 +18,7 @@ tape('encryption round trip', function (test) {
 })
 
 tape('bad decryption', function (test) {
-  const random = crypto.random(64)
+  const random = crypto.randomCiphertext(64)
   const key = crypto.encryptionKey()
   const nonce = crypto.nonce()
   const decrypted = crypto.decryptString({
@@ -29,7 +29,7 @@ tape('bad decryption', function (test) {
 })
 
 tape('binary encryption round trip', function (test) {
-  const binary = crypto.random(32)
+  const binary = crypto.randomHex(32)
   const key = crypto.encryptionKey()
   const nonce = crypto.nonce()
   const encrypted = crypto.encryptBinary({
@@ -43,7 +43,7 @@ tape('binary encryption round trip', function (test) {
 })
 
 tape('binary bad decryption', function (test) {
-  const random = crypto.random(32)
+  const random = crypto.randomHex(32)
   const key = crypto.encryptionKey()
   const nonce = crypto.nonce()
   const decrypted = crypto.decryptBinary({
@@ -118,7 +118,7 @@ tape('hashJSON', function (test) {
 })
 
 tape('random', function (test) {
-  const random = crypto.random(32)
+  const random = crypto.randomHex(32)
   test.assert(typeof random === 'string')
   test.end()
 })
@@ -141,7 +141,7 @@ tape('verify envelope', function (test) {
   const distributionKey = crypto.distributionKey()
   const discoveryKey = crypto.discoveryKey(distributionKey)
   const index = 1
-  const prior = crypto.hash(crypto.random(64))
+  const prior = crypto.hash(crypto.randomHex(64))
   const entry = {
     version: '1.0.0-pre',
     discoveryKey,
@@ -186,7 +186,7 @@ tape('verify envelope', function (test) {
   test.end()
 })
 
-tape('envelope generate and verify', function (test) {
+tape('envelope generate, verify, decrypt', function (test) {
   const distributionKey = crypto.distributionKey()
   const discoveryKey = crypto.discoveryKey(distributionKey)
   const journalKeyPair = crypto.keyPair()
@@ -194,7 +194,7 @@ tape('envelope generate and verify', function (test) {
   const projectPublicKey = projectKeyPair.publicKey
   const encryptionKey = crypto.encryptionKey()
   const index = 1
-  const prior = crypto.hash(crypto.random(64))
+  const prior = crypto.hash(crypto.randomHex(64))
   const entry = {
     version: '1.0.0-pre',
     discoveryKey,
@@ -227,6 +227,8 @@ tape('envelope generate and verify', function (test) {
     })
   }, '.verifyEnvelope() does not throw')
   test.same(errors, [], '.verifyEnvelope() returns no errors')
+  const decrypted = crypto.decryptEntry({ envelope, encryptionKey })
+  test.same(entry, decrypted, 'decrypted')
   test.end()
 })
 
@@ -253,14 +255,5 @@ tape('invitation round trip', function (test) {
   test.same(opened.secretKey, secretKey, 'secretKey')
   test.same(opened.encryptionKey, encryptionKey, 'encryptionKey')
   test.same(opened.title, title, 'title')
-  test.end()
-})
-
-tape('encoding round trip', function (test) {
-  const original = crypto.random(32)
-  const hex = crypto.base64ToHex(original)
-  test.assert(/^[a-f0-9]+$/.test(hex))
-  const base64 = crypto.hexToBase64(hex)
-  test.same(original, base64)
   test.end()
 })
