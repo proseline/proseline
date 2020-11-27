@@ -151,7 +151,7 @@ route('/', (request, response) => {
       (error, discoveryKeys) => {
         if (error) return done(error)
         runParallelLimit(
-          discoveryKeys.map(key => storage.project.read(key, done)),
+          discoveryKeys.map(key => done => storage.project.read(key, done)),
           3,
           done
         )
