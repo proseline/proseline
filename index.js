@@ -82,13 +82,14 @@ const socialMeta = html`
 
 const titleSuffix = ` / ${brandName}`
 
-const header = `<header role=banner>
+const header = html`
+<header role=banner>
   <img class=logo src=/logo.svg alt=logo>
   <h1>${brandName}</h1>
   <p class=tagline>${tagline}</p>
 </header>`
 
-const footer = `
+const footer = html`
 <footer role=contentinfo>
   <p>a service of <a href=https://artlessdevices.com>Artless Devices</a></p>
 </footer>
