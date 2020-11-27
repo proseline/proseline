@@ -3,6 +3,7 @@
 
 const assert = require('assert')
 const expired = require('./expired')
+const html = require('./html')
 const sodium = require('sodium-native')
 
 // Generate CSRF tokens.
@@ -39,9 +40,9 @@ exports.inputs = ({ action, sessionID }) => {
   assert(typeof sessionID === 'string')
 
   const generated = exports.generate({ action, sessionID })
-  return `
-    <input type=hidden name=${tokenName} value="${generated.token}">
-    <input type=hidden name=${nonceName} value="${generated.nonce}">
+  return html`
+    <input type=hidden name="${tokenName}" value="${generated.token}">
+    <input type=hidden name="${nonceName}" value="${generated.nonce}">
   `
 }
 
