@@ -173,7 +173,7 @@ route('/', (request, response) => {
     ${header}
     ${nav(request)}
     <main role=main>
-    ${data.projects && projectsList(data.projects)}
+    ${data.projects && data.projects.length !== 0 && projectsList(data.projects)}
     </main>
     ${footer}
   </body>
