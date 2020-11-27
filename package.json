@@ -7,6 +7,8 @@
     "cookie": "^0.4.1",
     "do-not-cache": "^1.0.1",
     "escape-html": "^1.0.3",
+    "fast-json-stable-stringify": "^2.1.0",
+    "has": "^1.0.3",
     "lock": "^1.1.0",
     "nodemailer": "^6.4.16",
     "pino": "^6.7.0",
@@ -16,6 +18,7 @@
     "run-series": "^1.1.9",
     "secure-password": "^4.0.0",
     "simple-concat-limit": "^2.0.3",
+    "sodium-universal": "^3.0.3",
     "stripe": "^8.126.0",
     "url-parse": "^1.4.7",
     "uuid": "^8.3.1"
