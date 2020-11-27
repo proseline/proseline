@@ -74,7 +74,7 @@ const socialMeta = html`
 <meta name="twitter:title" content="${brandName}">
 <meta name="twitter:description" content="${tagline}">
 <meta name="twitter:image" content="${socialImage}">
-<meta name="twitter:creator" content="@arltessdevices">
+<meta name="twitter:creator" content="@artlessdevices">
 <meta name="og:type" content="website">
 <meta name="og:title" content="${brandName}">
 <meta name="og:description" content="${tagline}">
