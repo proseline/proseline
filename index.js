@@ -26,40 +26,17 @@ const inProduction = process.env.NODE_ENV === 'production'
 const brandName = 'Proseline'
 const tagline = 'write nice with others'
 
+const simpleRoutes = new Map() // pathname -> f(request, response)
+function route (pathname, handler) {
+  simpleRoutes.set(pathname, handler)
+}
+
 module.exports = (request, response) => {
   const parsed = request.parsed = parseURL(request.url, true)
   authenticate(request, response, () => {
     const pathname = parsed.pathname
-    if (pathname === '/') return serveHomepage(request, response)
-    if (pathname === '/styles.css') return serveStyles(request, response)
-    if (pathname === '/logo.svg') return serveLogo(request, response)
-    if (pathname === '/logo-500.png') return servePNG(request, response)
-    if (pathname === '/logo-1000.png') return servePNG(request, response)
-    if (pathname === '/signup') return serveSignUp(request, response)
-    if (pathname === '/login') return serveLogIn(request, response)
-    if (pathname === '/logout') return serveLogOut(request, response)
-    if (pathname === '/account') return serveAccount(request, response)
-    if (pathname === '/handle') return serveHandle(request, response)
-    if (pathname === '/email') return serveEMail(request, response)
-    if (pathname === '/password') return servePassword(request, response)
-    if (pathname === '/reset') return serveReset(request, response)
-    if (pathname === '/confirm') return serveConfirm(request, response)
-    if (pathname === '/subscribe') return serveSubscribe(request, response)
-    if (pathname === '/subscribed') return serveSubscribed(request, response)
-    if (pathname === '/subscription') return serveSubscription(request, response)
-    if (pathname === '/stripe-webhook') return serveStripeWebhook(request, response)
-    if (pathname === '/tagline') {
-      response.setHeader('Content-Type', 'text/plain')
-      return response.end(tagline)
-    }
-    if (pathname === '/internal-error' && !inProduction) {
-      const testError = new Error('test error')
-      return serve500(request, response, testError)
-    }
-    if (pathname === '/robots.txt') {
-      response.setHeader('Content-Type', 'text/plain; charset=UTF-8')
-      return response.end('User-agent: *\nDisallow: /')
-    }
+    const simpleRoute = simpleRoutes.get(pathname)
+    if (simpleRoute) return simpleRoute(request, response)
     serve404(request, response)
   })
 }
@@ -161,7 +138,7 @@ function logoutButton (request) {
 
 // Routes
 
-function serveHomepage (request, response) {
+route('/', (request, response) => {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
   response.setHeader('Content-Type', 'text/html')
@@ -181,25 +158,19 @@ function serveHomepage (request, response) {
   </body>
 </html>
   `)
-}
+})
 
-function serveStyles (request, response) {
+route('/styles.css', (request, response) => {
   const file = path.join(__dirname, 'styles.css')
   response.setHeader('Content-Type', 'text/css')
   fs.createReadStream(file).pipe(response)
-}
+})
 
-function serveLogo (request, response) {
+route('/logo.svg', (request, response) => {
   const file = path.join(__dirname, 'logo.svg')
   response.setHeader('Content-Type', 'image/svg+xml')
   fs.createReadStream(file).pipe(response)
-}
-
-function servePNG (request, response) {
-  const file = path.join(__dirname, request.pathname)
-  response.setHeader('Content-Type', 'image/png')
-  fs.createReadStream(file).pipe(response)
-}
+})
 
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 const EMAIL_RE = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/
@@ -238,7 +209,7 @@ const passwords = (() => {
   }
 })()
 
-function serveSignUp (request, response) {
+route('/signup', (request, response) => {
   const title = 'Sign Up'
 
   const fields = {
@@ -425,9 +396,9 @@ function serveSignUp (request, response) {
 </html>
     `)
   }
-}
+})
 
-function serveLogIn (request, response) {
+route('/login', (request, response) => {
   const title = 'Log In'
 
   const fields = {
@@ -548,9 +519,9 @@ function serveLogIn (request, response) {
     request.log.info({ expires }, 'set cookie')
     serve303(request, response, '/')
   }
-}
+})
 
-function serveLogOut (request, response) {
+route('/logout', (request, response) => {
   if (request.method !== 'POST') {
     return serve405(request, response)
   }
@@ -589,9 +560,9 @@ function serveLogOut (request, response) {
     response.setHeader('Location', '/')
     response.end()
   }
-}
+})
 
-function serveAccount (request, response) {
+route('/account', (request, response) => {
   if (request.method !== 'GET') return serve405(request, response)
   const account = request.account
   if (!account) return serve302(request, response, '/login')
@@ -629,9 +600,9 @@ function serveAccount (request, response) {
   </body>
 </html>
   `)
-}
+})
 
-function serveHandle (request, response) {
+route('/handle', (request, response) => {
   const title = 'Forgot Handle'
 
   const fields = {
@@ -717,9 +688,9 @@ function serveHandle (request, response) {
       }, done)
     })
   }
-}
+})
 
-function serveEMail (request, response) {
+route('/email', (request, response) => {
   const title = 'Change E-Mail'
 
   const fields = {
@@ -814,15 +785,15 @@ function serveEMail (request, response) {
       })
     })
   }
-}
+})
 
-function servePassword (request, response) {
+route('/password', (request, response) => {
   const method = request.method
   if (method === 'GET') return getPassword(request, response)
   if (method === 'POST') return postPassword(request, response)
   response.statusCode = 405
   response.end()
-}
+})
 
 function getPassword (request, response) {
   if (request.parsed.query.token) return getWithToken(request, response)
@@ -1107,7 +1078,7 @@ function postPassword (request, response) {
   }
 }
 
-function serveReset (request, response) {
+route('/reset', (request, response) => {
   const title = 'Reset Password'
 
   const fields = {
@@ -1207,9 +1178,9 @@ function serveReset (request, response) {
 </html>
     `)
   }
-}
+})
 
-function serveConfirm (request, response) {
+route('/confirm', (request, response) => {
   if (request.method !== 'GET') {
     return serve405(request, response)
   }
@@ -1276,9 +1247,9 @@ function serveConfirm (request, response) {
       }
     })
   })
-}
+})
 
-function serveSubscribe (request, response) {
+route('/subscribe', (request, response) => {
   const title = 'Subscribe'
 
   const fields = {}
@@ -1412,9 +1383,9 @@ function serveSubscribe (request, response) {
 </html>
     `)
   }
-}
+})
 
-function serveSubscribed (request, response) {
+route('/subscribed', (request, response) => {
   const title = 'Subscribed'
   response.setHeader('Content-Type', 'text/html')
   response.end(html`
@@ -1435,9 +1406,9 @@ function serveSubscribed (request, response) {
   </body>
 </html>
   `)
-}
+})
 
-function serveSubscription (request, response) {
+route('/subscription', (request, response) => {
   const title = 'Subscription'
 
   const fields = { }
@@ -1497,9 +1468,9 @@ function serveSubscription (request, response) {
 </html>
     `)
   }
-}
+})
 
-function serveStripeWebhook (request, response) {
+route('/stripe-webhook', (request, response) => {
   const signature = request.headers['stripe-signature']
   simpleConcatLimit(request, 8192, (error, buffer) => {
     if (error) {
@@ -1611,6 +1582,32 @@ function serveStripeWebhook (request, response) {
     response.statusCode = 500
     response.end()
   }
+})
+
+route('/logo-500.png', servePNG)
+route('/logo-1000.png', servePNG)
+
+function servePNG (request, response) {
+  const file = path.join(__dirname, request.pathname)
+  response.setHeader('Content-Type', 'image/png')
+  fs.createReadStream(file).pipe(response)
+}
+
+route('/tagline', (request, response) => {
+  response.setHeader('Content-Type', 'text/plain')
+  return response.end(tagline)
+})
+
+route('/robots.txt', (request, response) => {
+  response.setHeader('Content-Type', 'text/plain; charset=UTF-8')
+  return response.end('User-agent: *\nDisallow: /')
+})
+
+if (!inProduction) {
+  route('/internal-error', (request, response) => {
+    const testError = new Error('test error')
+    return serve500(request, response, testError)
+  })
 }
 
 function setCookie (response, value, expires) {
