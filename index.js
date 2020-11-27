@@ -56,6 +56,10 @@ module.exports = (request, response) => {
       const testError = new Error('test error')
       return serve500(request, response, testError)
     }
+    if (pathname === '/robots.txt') {
+      response.setHeader('Content-Type', 'text/plain; charset=UTF-8')
+      return response.end('User-agent: *\nDisallow: /')
+    }
     serve404(request, response)
   })
 }
