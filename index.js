@@ -90,6 +90,7 @@ const header = `<header role=banner>
 
 const footer = `
 <footer role=contentinfo>
+  <p>a service of <a href=https://artlessdevices.com>Artless Devices</a></p>
 </footer>
 `
 
