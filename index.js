@@ -1844,6 +1844,7 @@ route('/tagline', (request, response) => {
 })
 
 route('/robots.txt', (request, response) => {
+  doNotCache(response)
   response.setHeader('Content-Type', 'text/plain; charset=UTF-8')
   return response.end('User-agent: *\nDisallow: /')
 })
