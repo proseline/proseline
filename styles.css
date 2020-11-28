@@ -18,6 +18,8 @@ a[href]:hover {
 }
 
 .logo {
+  border: none;
+  text-decoration: none;
   width: 5rem;
 }
 

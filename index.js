@@ -83,7 +83,7 @@ const titleSuffix = ` / ${brandName}`
 
 const header = html`
 <header role=banner>
-  <img class=logo src=/logo.svg alt=logo>
+  <a class=logo href=/><img src=/logo.svg alt=logo></a>
   <h1>${brandName}</h1>
   <p class=tagline>${tagline}</p>
 </header>`
