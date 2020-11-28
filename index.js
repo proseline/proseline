@@ -103,9 +103,9 @@ function nav (request) {
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && !account.subscriptionID && subscribeButton(request)}
   ${handle && account.subscriptionID && '<a id=project class=button href=/projects>New Project</a>'}
-  ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
 </nav>
+${handle && logoutButton(request)}
   `
 }
 

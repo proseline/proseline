@@ -21,3 +21,8 @@ a[href]:hover {
   width: 5rem;
 }
 
+#logoutForm {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+}
