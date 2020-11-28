@@ -102,7 +102,6 @@ function nav (request) {
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
   ${handle && !account.subscriptionID && subscribeButton(request)}
-  ${handle && account.subscriptionID && manageSubscriptionButton(request)}
   ${handle && account.subscriptionID && '<a id=project class=button href=/projects>New Project</a>'}
   ${handle && logoutButton(request)}
   ${handle && '<a id=account class=button href=/account>Account</a>'}
@@ -646,6 +645,7 @@ route('/account', (request, response) => {
       </table>
       <a class=button href=/password>Change Password</a>
       <a class=button href=/email>Change E-Mail</a>
+      ${account.subscriptionID && manageSubscriptionButton(request)}
     </main>
     ${footer}
   </body>
