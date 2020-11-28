@@ -54,3 +54,7 @@ button:hover, a[href].button:hover {
   color: white;
   text-decoration: none;
 }
+
+.oneButtonForm {
+  display: inline-block;
+}

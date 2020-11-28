@@ -114,7 +114,10 @@ function subscribeButton (request) {
     sessionID: request.session.id
   })
   return html`
-<form action=${action} method=post>
+<form
+    action=${action}
+    class=oneButtonForm
+    method=post>
   ${csrfInputs}
   <button id=subscribe type=submit>Subscribe</button>
 </form>
@@ -128,7 +131,10 @@ function manageSubscriptionButton (request) {
     sessionID: request.session.id
   })
   return html`
-<form action=${action} method=post>
+<form
+    action=${action}
+    class=oneButtonForm
+    method=post>
   ${csrfInputs}
   <button id=subscription type=submit>Manage Subscription</button>
 </form>
@@ -143,6 +149,7 @@ function logoutButton (request) {
   return html`
 <form
     id=logoutForm
+    class=oneButtonForm
     action=/logout
     method=post>
   ${csrfInputs}
