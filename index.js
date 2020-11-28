@@ -1604,8 +1604,8 @@ route('/projects', (request, response) => {
     function addProjectToAccount (done) {
       storage.accountProject.write(handle, discoveryKey, {
         handle,
-        title,
         discoveryKey,
+        title,
         journalKeyPair,
         created
       }, done)
@@ -1617,9 +1617,9 @@ route('/projects', (request, response) => {
         journalKeyPair.publicKey,
         {
           discoveryKey,
-          keyPair: journalKeyPair,
-          created,
-          handle
+          journalKeyPair,
+          handle,
+          created
         },
         done
       )
