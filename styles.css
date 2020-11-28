@@ -32,6 +32,24 @@ h1 {
   margin-top: 0;
 }
 
+button[type=submit],
+input[type=text],
+input[type=email],
+input[type=url],
+input[type=number],
+input[type=password],
+textarea,
+select {
+  background: white;
+  border-radius: 0.25rem;
+  border: 1px solid black;
+  box-sizing: border-box;
+  margin-bottom: 0.25rem;
+  margin-top: 0.25rem;
+  padding: 0.5rem;
+  width: 100%;
+}
+
 button, a[href].button {
   background: white;
   border-radius: 0.25rem;
