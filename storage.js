@@ -1,5 +1,35 @@
 // Read, write, and index various data records.
 
+// Key Layout
+//
+// accounts/{handle}
+//   -> e-mail address
+//   -> password hash
+//   -> account confirmation status
+//   -> bad-password lock information
+//   -> ...
+//
+// emails/{e-mail address}
+//   -> account handle
+//
+// sessions/{UUID}
+//   -> handle
+//
+// projects/{project discovery key}
+//   -> keys
+//   -> creator's handle
+//
+// projectJournals/{project discovery key}/{journal public key}
+//   -> handle
+//   -> journal key pair
+//
+// entries/{project discovery key}/{journal public key}/{lexical index}
+//   -> envelope
+//
+// accountProjects/{handle}/{project discovery key}
+//   -> project title
+//   -> journal key pair
+
 const assert = require('assert')
 const indices = require('./indices')
 const lock = require('lock').Lock()
