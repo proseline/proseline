@@ -17,9 +17,8 @@ a[href]:hover {
   text-decoration: underline;
 }
 
-.logo {
+.logo img {
   border: none;
-  text-decoration: none;
   width: 5rem;
 }
 
@@ -27,4 +26,8 @@ a[href]:hover {
   position: absolute;
   right: 1rem;
   top: 1rem;
+}
+
+h1 {
+  margin-top: 0;
 }

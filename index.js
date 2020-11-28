@@ -1718,7 +1718,7 @@ route(
     ${header}
     ${nav(request)}
     <main role=main>
-      <h1>${title}</h1>
+      <h2>${title}</h2>
     </main>
     ${footer}
   </body>
@@ -2132,7 +2132,7 @@ function serve500 (request, response, error) {
   </head>
   <body>
     <main role=main>
-      <h1>${title}</h1>
+      <h2>${title}</h2>
     </main>
     ${footer}
   </body>
