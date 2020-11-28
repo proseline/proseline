@@ -30,6 +30,11 @@ nav[role=navigation] {
 
 h1 {
   margin-top: 0;
+  margin-bottom: 0;
+}
+
+.tagline {
+  margin-top: 0.25rem;
 }
 
 button[type=submit],
