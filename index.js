@@ -18,6 +18,7 @@ const runAuto = require('run-auto')
 const runParallel = require('run-parallel')
 const runParallelLimit = require('run-parallel-limit')
 const runSeries = require('run-series')
+const send = require('send')
 const simpleConcatLimit = require('simple-concat-limit')
 const storage = require('./storage')
 const uuid = require('uuid')
@@ -243,15 +244,11 @@ function projectsList (account, projects) {
 }
 
 route('/styles.css', (request, response) => {
-  const file = path.join(__dirname, 'styles.css')
-  response.setHeader('Content-Type', 'text/css')
-  fs.createReadStream(file).pipe(response)
+  send(request, path.join(__dirname, 'styles.css')).pipe(response)
 })
 
 route('/logo.svg', (request, response) => {
-  const file = path.join(__dirname, 'logo.svg')
-  response.setHeader('Content-Type', 'image/svg+xml')
-  fs.createReadStream(file).pipe(response)
+  send(request, path.join(__dirname, 'logo.svg')).pipe(response)
 })
 
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
@@ -1838,9 +1835,7 @@ route('/logo-500.png', servePNG)
 route('/logo-1000.png', servePNG)
 
 function servePNG (request, response) {
-  const file = path.join(__dirname, request.pathname)
-  response.setHeader('Content-Type', 'image/png')
-  fs.createReadStream(file).pipe(response)
+  send(request, path.join(__dirname, request.parsed.pathname)).pipe(response)
 }
 
 route('/tagline', (request, response) => {

@@ -16,8 +16,26 @@ simple({
 simple({
   path: '/styles.css',
   status: 200,
-  mime: 'text/css',
+  mime: 'text/css; charset=UTF-8',
   content: 'font-family'
+})
+
+simple({
+  path: '/logo.svg',
+  status: 200,
+  mime: 'image/svg+xml'
+})
+
+simple({
+  path: '/logo-500.png',
+  status: 200,
+  mime: 'image/png'
+})
+
+simple({
+  path: '/logo-1000.png',
+  status: 200,
+  mime: 'image/png'
 })
 
 simple({
