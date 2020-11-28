@@ -22,7 +22,7 @@ a[href]:hover {
   width: 5rem;
 }
 
-#logoutForm {
+nav[role=navigation] {
   position: absolute;
   right: 1rem;
   top: 1rem;

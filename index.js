@@ -4,6 +4,7 @@ const Busboy = require('busboy')
 const cookie = require('cookie')
 const crypto = require('./crypto')
 const csrf = require('./csrf')
+const displayDate = require('./display-date')
 const doNotCache = require('do-not-cache')
 const escapeHTML = require('escape-html')
 const fs = require('fs')
@@ -101,11 +102,8 @@ function nav (request) {
 <nav role=navigation>
   ${!handle && '<a id=login class=button href=/login>Log In</a>'}
   ${!handle && '<a id=signup class=button href=/signup>Sign Up</a>'}
-  ${handle && !account.subscriptionID && subscribeButton(request)}
-  ${handle && account.subscriptionID && '<a id=project class=button href=/projects>New Project</a>'}
-  ${handle && '<a id=account class=button href=/account>Account</a>'}
+  ${handle && logoutButton(request)}
 </nav>
-${handle && logoutButton(request)}
   `
 }
 
@@ -158,9 +156,10 @@ function logoutButton (request) {
 route('/', (request, response) => {
   if (request.method !== 'GET') return serve405(request, response)
   doNotCache(response)
+  const { account } = request
   const tasks = {}
   if (request.account) {
-    const { handle } = request.account
+    const { handle } = account
     tasks.projects = done => storage.accountProject.list(
       handle,
       (error, discoveryKeys) => {
@@ -188,7 +187,8 @@ route('/', (request, response) => {
     ${header}
     ${nav(request)}
     <main role=main>
-    ${data.projects && data.projects.length !== 0 && projectsList(data.projects)}
+      ${account && projectsList(account, data.projects)}
+      ${account && accountInfo(request)}
     </main>
     ${footer}
   </body>
@@ -197,11 +197,37 @@ route('/', (request, response) => {
   })
 })
 
-function projectsList (projects) {
+function accountInfo (request) {
+  const { account } = request
+  return html`
+<h2>Account</h2>
+<table>
+  <tr>
+    <th>Handle</th>
+    <td class=handle>${escapeHTML(account.handle)}</td>
+  </tr>
+  <tr>
+    <th>E-Mail</th>
+    <td class=email>${escapeHTML(account.email)}</td>
+  </tr>
+  <tr>
+    <th>Member Since</th>
+    <td class=signedup>${displayDate(account.created)}</td>
+  </tr>
+</table>
+${account.subscriptionID && manageSubscriptionButton(request)}
+${!account.subscriptionID && subscribeButton(request)}
+<a class=button href=/password>Change Password</a>
+<a class=button href=/email>Change E-Mail</a>
+  `
+}
+
+function projectsList (account, projects) {
   projects.sort((a, b) => a.created.localeCompare(b.created))
   return html`
 <h2>Projects</h2>
 <ul>
+  <li>${account.subscriptionID && '<a id=project class=button href=/projects>New Project</a>'}</li>
   ${projects.map(project => html`
   <li><a href="/projects/${project.discoveryKey}">${project.title}</a></li>
   `)}
@@ -610,47 +636,6 @@ route('/logout', (request, response) => {
     response.setHeader('Location', '/')
     response.end()
   }
-})
-
-route('/account', (request, response) => {
-  if (request.method !== 'GET') return serve405(request, response)
-  const account = request.account
-  if (!account) return serve302(request, response, '/login')
-  response.setHeader('Content-Type', 'text/html')
-  response.end(html`
-<!doctype html>
-<html lang=en-US>
-  <head>
-    ${meta}
-    <title>Account${titleSuffix}</title>
-  </head>
-  <body>
-    ${header}
-    ${nav(request)}
-    <main role=main>
-      <h2>Account</h2>
-      <table>
-        <tr>
-          <th>Handle</th>
-          <td class=handle>${escapeHTML(account.handle)}</td>
-        </tr>
-        <tr>
-          <th>E-Mail</th>
-          <td class=email>${escapeHTML(account.email)}</td>
-        </tr>
-        <tr>
-          <th>Signed Up</th>
-          <td class=signedup>${escapeHTML(new Date(account.created).toISOString())}</td>
-        </tr>
-      </table>
-      <a class=button href=/password>Change Password</a>
-      <a class=button href=/email>Change E-Mail</a>
-      ${account.subscriptionID && manageSubscriptionButton(request)}
-    </main>
-    ${footer}
-  </body>
-</html>
-  `)
 })
 
 route('/handle', (request, response) => {

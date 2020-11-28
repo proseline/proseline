@@ -6,6 +6,7 @@
     "commonmark": "^0.29.2",
     "cookie": "^0.4.1",
     "do-not-cache": "^1.0.1",
+    "english-months": "^1.0.3",
     "escape-html": "^1.0.3",
     "fast-json-stable-stringify": "^2.1.0",
     "has": "^1.0.3",
