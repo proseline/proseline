@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "ajv": "^6.12.6",
     "aws-sdk": "^2.799.0",
     "busboy": "^0.3.1",
     "commonmark": "^0.29.2",
