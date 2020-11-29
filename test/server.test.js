@@ -1,3 +1,4 @@
+const crypto = require('../crypto')
 const csrf = require('../csrf')
 const fs = require('fs')
 const runSeries = require('run-series')
@@ -8,6 +9,7 @@ tape('server', test => {
   fs.mkdtemp('/tmp/', _ => {
     let server, curl
     const serverPort = 8080
+    const keyPair = crypto.keyPair()
     runSeries([
       done => {
         server = spawn('node', ['server.js'], {
@@ -16,9 +18,12 @@ tape('server', test => {
             NODE_ENV: 'test',
             BASE_HREF: 'http://localhost:' + serverPort + '/',
             CSRF_KEY: csrf.randomKey(),
+            PUBLIC_KEY: keyPair.publicKey,
+            SECRET_KEY: keyPair.secretKey,
             STRIPE_PLAN: process.env.STRIPE_PLAN,
             STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY,
-            STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY
+            STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+            STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET
           }
         })
         server.stdout.once('data', () => {
