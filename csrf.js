@@ -58,30 +58,30 @@ exports.verify = ({ action, sessionID, token, nonce }, callback) => {
   const plaintext = Buffer.alloc(ciphertext.length - sodium.crypto_secretbox_MACBYTES)
   const nonceBuffer = Buffer.from(nonce, 'hex')
   if (!sodium.crypto_secretbox_open_easy(plaintext, ciphertext, nonceBuffer, key)) {
-    const error = new Error('decryption failure')
-    error.decryption = true
-    return callback(error)
+    const decryptionError = new Error('decryption failure')
+    decryptionError.decryption = true
+    return callback(decryptionError)
   }
   const [encryptedAction, encryptedSessionID, date] = plaintext.toString().split('\n')
   if (encryptedAction !== action) {
-    const error = new Error('action mismatch')
-    error.field = 'action'
-    error.expected = action
-    error.received = encryptedAction
-    return callback(error)
+    const actionError = new Error('action mismatch')
+    actionError.field = 'action'
+    actionError.expected = action
+    actionError.received = encryptedAction
+    return callback(actionError)
   }
   if (encryptedSessionID !== sessionID) {
-    const error = new Error('session mismatch')
-    error.field = 'sessionID'
-    error.expected = sessionID
-    error.received = encryptedSessionID
-    return callback(error)
+    const mismatchError = new Error('session mismatch')
+    mismatchError.field = 'sessionID'
+    mismatchError.expected = sessionID
+    mismatchError.received = encryptedSessionID
+    return callback(mismatchError)
   }
   if (expired.csrfToken(date)) {
-    const error = new Error('expired')
-    error.field = 'date'
-    error.date = date
-    return callback(error)
+    const expiredError = new Error('expired')
+    expiredError.field = 'date'
+    expiredError.date = date
+    return callback(expiredError)
   }
   callback()
 }

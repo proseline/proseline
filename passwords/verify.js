@@ -20,15 +20,15 @@ module.exports = (handle, password, callback) => {
         return callback(error)
       }
       if (!account || account.confirmed === false) {
-        const invalid = new Error('invalid handle or password')
-        invalid.statusCode = 401
-        return callback(invalid, account)
+        const invalidError = new Error('invalid handle or password')
+        invalidError.statusCode = 401
+        return callback(invalidError, account)
       }
       const locked = account.locked
       if (locked && !expired.accountLock(locked)) {
-        const locked = new Error('account locked')
-        locked.statusCode = 401
-        return callback(locked, account)
+        const lockedError = new Error('account locked')
+        lockedError.statusCode = 401
+        return callback(lockedError, account)
       }
       const passwordHash = Buffer.from(account.passwordHash, 'hex')
       const passwordBuffer = Buffer.from(password, 'utf8')
