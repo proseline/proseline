@@ -323,9 +323,9 @@ route('/signup', (request, response) => {
         storage.account.exists(handle, (error, exists) => {
           if (error) return done(error)
           if (exists) {
-            const error = new Error('handle taken')
-            error.statusCode = 400
-            return done(error)
+            const handleTakenError = new Error('handle taken')
+            handleTakenError.statusCode = 400
+            return done(handleTakenError)
           }
           done()
         })
@@ -334,11 +334,11 @@ route('/signup', (request, response) => {
         storage.email.read(email, (error, handle) => {
           if (error) return done(error)
           if (!handle) return done()
-          const hasAccount = new Error('e-mail address has an account')
-          hasAccount.hasAccount = true
-          hasAccount.statusCode = 401
-          hasAccount.fieldName = 'email'
-          done(hasAccount)
+          const hasAccountError = new Error('e-mail address has an account')
+          hasAccountError.hasAccount = true
+          hasAccountError.statusCode = 401
+          hasAccountError.fieldName = 'email'
+          done(hasAccountError)
         })
       },
       done => {
@@ -804,10 +804,10 @@ route('/email', (request, response) => {
     storage.email.read(email, (error, existingHandle) => {
       if (error) return done(error)
       if (existingHandle) {
-        const error = new Error('e-mail already has an account')
-        error.fieldName = 'email'
-        error.statusCode = 400
-        return done(error)
+        const hasAccountError = new Error('e-mail already has an account')
+        hasAccountError.fieldName = 'email'
+        hasAccountError.statusCode = 400
+        return done(hasAccountError)
       }
       const token = uuid.v4()
       storage.token.write(token, {
@@ -1023,30 +1023,29 @@ function postPassword (request, response) {
   }
 
   function validateInputs (done) {
-    let error
     const token = body.token
     if (token && !UUID_RE.test(token)) {
-      error = new Error('invalid token')
-      error.fieldName = 'token'
-      return done(error)
+      const invalidTokenError = new Error('invalid token')
+      invalidTokenError.fieldName = 'token'
+      return done(invalidTokenError)
     }
     const password = body.password
     const repeat = body.repeat
     if (password !== repeat) {
-      error = new Error('passwords did not match')
-      error.fieldName = 'repeat'
-      return done(error)
+      const mismatchError = new Error('passwords did not match')
+      mismatchError.fieldName = 'repeat'
+      return done(mismatchError)
     }
     if (!passwords.validate(password)) {
-      error = new Error('invalid password')
-      error.fieldName = 'password'
-      return done(error)
+      const invalidError = new Error('invalid password')
+      invalidError.fieldName = 'password'
+      return done(invalidError)
     }
     const old = body.old
     if (!token && !old) {
-      error = new Error('missing old password')
-      error.fieldName = 'old'
-      return done(error)
+      const missingError = new Error('missing old password')
+      missingError.fieldName = 'old'
+      return done(missingError)
     }
     csrf.verify({
       action: '/password',
@@ -1060,16 +1059,16 @@ function postPassword (request, response) {
     const token = body.token
     if (token) return done()
     if (!request.account) {
-      const unauthorized = new Error('unauthorized')
-      unauthorized.statusCode = 401
-      return done(unauthorized)
+      const unauthorizedError = new Error('unauthorized')
+      unauthorizedError.statusCode = 401
+      return done(unauthorizedError)
     }
     handle = request.account.handle
     verifyPassword(handle, body.old, error => {
       if (error) {
-        const invalidOldPassword = new Error('invalid password')
-        invalidOldPassword.statusCode = 400
-        return done(invalidOldPassword)
+        const invalidOldPasswordError = new Error('invalid password')
+        invalidOldPasswordError.statusCode = 400
+        return done(invalidOldPasswordError)
       }
       return done()
     })
@@ -1081,9 +1080,9 @@ function postPassword (request, response) {
       return storage.token.read(token, (error, tokenData) => {
         if (error) return done(error)
         if (!tokenData || tokenData.action !== 'reset') {
-          const failed = new Error('invalid token')
-          failed.statusCode = 401
-          return done(failed)
+          const failedError = new Error('invalid token')
+          failedError.statusCode = 401
+          return done(failedError)
         }
         storage.token.use(token, error => {
           if (error) return done(error)
@@ -1177,9 +1176,9 @@ route('/reset', (request, response) => {
     storage.account.read(handle, (error, account) => {
       if (error) return done(error)
       if (!account) {
-        const invalid = new Error('invalid handle')
-        invalid.statusCode = 400
-        return done(invalid)
+        const invalidError = new Error('invalid handle')
+        invalidError.statusCode = 400
+        return done(invalidError)
       }
       const token = uuid.v4()
       storage.token.write(token, {
@@ -1338,9 +1337,9 @@ route('/subscribe', (request, response) => {
           if (error) return done(error)
           if (subscriptions.length !== 0) {
             request.log.info({ subscriptions }, 'subscriptions')
-            const alreadySubscribed = new Error('already subscribed')
-            alreadySubscribed.statusCode = 400
-            return done(alreadySubscribed)
+            const alreadySubscribedError = new Error('already subscribed')
+            alreadySubscribedError.statusCode = 400
+            return done(alreadySubscribedError)
           }
           done()
         })
@@ -1465,9 +1464,9 @@ route('/subscription', (request, response) => {
   function processBody (request, body, done) {
     const { customerID } = request.account
     if (!customerID) {
-      const notSubscribed = new Error('not subscribed')
-      notSubscribed.statusCode = 404
-      return done(notSubscribed)
+      const notSubscribedError = new Error('not subscribed')
+      notSubscribedError.statusCode = 404
+      return done(notSubscribedError)
     }
     stripe.billingPortal.sessions.create({
       customer: customerID,
@@ -2060,9 +2059,9 @@ function formRoute ({
         const description = fields[fieldName]
         const valid = description.validate(body[fieldName], body)
         if (valid) continue
-        const error = new Error('invalid ' + description.displayName)
-        error.statusCode = 401
-        return done(error)
+        const invalidError = new Error('invalid ' + description.displayName)
+        invalidError.statusCode = 401
+        return done(invalidError)
       }
       csrf.verify({
         action,
@@ -2177,8 +2176,8 @@ function authenticate (request, response, handler) {
       if (error) return serve500(request, response, error)
       const account = results.account
       if (!account) {
-        const error = new Error('could not load account')
-        return serve500(request, response, error)
+        const loadError = new Error('could not load account')
+        return serve500(request, response, loadError)
       }
       if (account.confirmed) request.account = account
       proceed()
