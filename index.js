@@ -7,7 +7,6 @@ const csrf = require('./csrf')
 const displayDate = require('./display-date')
 const doNotCache = require('do-not-cache')
 const escapeHTML = require('escape-html')
-const fs = require('fs')
 const hashPassword = require('./passwords/hash')
 const html = require('./html')
 const mail = require('./mail')
@@ -2139,11 +2138,13 @@ function serve303 (request, response, location) {
   response.end()
 }
 
+/*
 function serve302 (request, response, location) {
   response.statusCode = 302
   response.setHeader('Location', location)
   response.end()
 }
+*/
 
 function authenticate (request, response, handler) {
   const header = request.headers.cookie
