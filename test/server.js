@@ -8,7 +8,9 @@ const os = require('os')
 const path = require('path')
 const pino = require('pino')
 const pinoHTTP = require('pino-http')
+const runSeries = require('run-series')
 const s3 = require('../s3')
+const simpleConcat = require('simple-concat')
 const spawn = require('child_process').spawn
 
 module.exports = callback => {
@@ -20,7 +22,7 @@ module.exports = callback => {
   process.env.PUBLIC_KEY = keyPair.publicKey
   process.env.SECRET_KEY = keyPair.secretKey
   let webServer
-  let stripeCLI
+  let stripeListen
   fs.mkdtemp(path.join(os.tmpdir(), 'proseline-'), (error, tmp) => {
     if (error) {
       cleanup()
@@ -42,21 +44,43 @@ module.exports = callback => {
         })
         assert(false)
       }
-      const events = [
-        'checkout.session.completed',
-        'customer.subscription.deleted'
-      ]
-      stripeCLI = spawn(
-        'stripe',
-        [
-          'listen',
-          '--forward-to',
-          `localhost:${port}/stripe-webhook`,
-          '--events',
-          events.join(',')
-        ]
-      )
-      stripeCLI.stdout.once('data', () => {
+      runSeries([
+        function setWebhookSecret (done) {
+          const stripeSecret = spawn('stripe', ['listen', '--print-secret'])
+          simpleConcat(stripeSecret.stdout, (_, buffer) => {
+            const secret = buffer.toString().trim()
+            process.env.STRIPE_WEBHOOK_SECRET = secret
+            logger.info({ secret }, 'Stripe webhook secret')
+            done()
+          })
+        },
+        function listenForEvents (done) {
+          const events = [
+            'checkout.session.completed',
+            'customer.subscription.deleted'
+          ]
+          const stripeArguments = [
+            'listen',
+            '--skip-update',
+            '--print-json',
+            '--forward-to', `localhost:${port}/stripe-webhook`,
+            '--events', events.join(',')
+          ]
+          stripeListen = spawn('stripe', stripeArguments)
+          stripeListen.stdout.pipe(fs.createWriteStream('stripe.out.log'))
+          stripeListen.stderr.pipe(fs.createWriteStream('stripe.err.log'))
+          stripeListen.stderr.addListener('data', listenForRead)
+          let chunks = []
+          function listenForRead (chunk) {
+            chunks.push(chunk)
+            if (Buffer.concat(chunks).toString().includes('Ready!')) {
+              chunks = null
+              stripeListen.stderr.removeListener('data', listenForRead)
+              done()
+            }
+          }
+        }
+      ], () => {
         callback(port, cleanup)
       })
     })
@@ -64,7 +88,7 @@ module.exports = callback => {
 
   function cleanup () {
     if (webServer) webServer.close()
-    if (stripeCLI) stripeCLI.kill()
+    if (stripeListen) stripeListen.kill()
     s3.clear()
   }
 }

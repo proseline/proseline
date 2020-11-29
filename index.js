@@ -20,6 +20,7 @@ const runSeries = require('run-series')
 const send = require('send')
 const simpleConcatLimit = require('simple-concat-limit')
 const storage = require('./storage')
+const testEvents = require('./test-events')
 const uuid = require('uuid')
 const verifyPassword = require('./passwords/verify')
 
@@ -1439,6 +1440,10 @@ route('/subscribed', (request, response) => {
     <main role=main>
       <h2>${title}</h2>
       <p class=message>Thank you for subscribing!</p>
+      <p>
+        Head <a href=/>back to the homepage</a>
+        to start creating projects.
+      </p>
     </main>
     ${footer}
   </body>
@@ -1717,7 +1722,7 @@ route(
 
 route('/stripe-webhook', (request, response) => {
   const signature = request.headers['stripe-signature']
-  simpleConcatLimit(request, 8192, (error, buffer) => {
+  simpleConcatLimit(request, 32768, (error, buffer) => {
     if (error) {
       response.statusCode = 500
       return response.end()
@@ -1767,7 +1772,8 @@ route('/stripe-webhook', (request, response) => {
                 if (error) request.log.warn(error)
               })
             }
-            return succeed()
+            succeed()
+            if (!inProduction) testEvents.emit(type, { handle })
           }
         )
       })
@@ -1803,7 +1809,8 @@ route('/stripe-webhook', (request, response) => {
                 if (error) request.log.warn(error)
               })
             }
-            return succeed()
+            succeed()
+            if (!inProduction) testEvents.emit(type, { handle })
           }
         )
       })

@@ -31,8 +31,6 @@ tape('change password', test => {
             .then(() => browser.$('#loginForm button[type="submit"]'))
             .then(submit => submit.click())
             // Navigate to password-change page.
-            .then(() => browser.$('a=Account'))
-            .then(a => a.click())
             .then(() => browser.$('a=Change Password'))
             .then(a => a.click())
             // Submit password-change form.

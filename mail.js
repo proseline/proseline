@@ -20,8 +20,7 @@ if (process.env.NODE_ENV === 'production') {
 // In testing, mock e-mail, exposing an Event Emitter that
 // tests can uses to intercept e-mails and their contents.
 } else {
-  const EventEmitter = require('events').EventEmitter
-  const emitter = new EventEmitter()
+  const emitter = require('./test-events')
   module.exports = (options, callback) => {
     // This delay prevents tests from visiting account-confirmation
     // pages before the app has time to index the tokens.

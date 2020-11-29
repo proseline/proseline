@@ -32,8 +32,6 @@ tape('change e-mail', test => {
       }))
       // Navigate to password-change page.
       .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Account'))
-      .then(a => a.click())
       .then(() => browser.$('a=Change E-Mail'))
       .then(a => a.click())
       // Submit password-change form.
@@ -90,8 +88,7 @@ tape('change e-mail to existing', test => {
         browser, port, test, handle, email
       }))
       // Navigate to password-change page.
-      .then(() => browser.$('a=Account'))
-      .then(a => a.click())
+      .then(() => browser.navigateTo('http://localhost:' + port))
       .then(() => browser.$('a=Change E-Mail'))
       .then(a => a.click())
       // Submit password-change form.
