@@ -1721,26 +1721,29 @@ route(
 )
 
 route('/stripe-webhook', (request, response) => {
-  const signature = request.headers['stripe-signature']
   simpleConcatLimit(request, 32768, (error, buffer) => {
     if (error) {
-      response.statusCode = 500
+      response.statusCode = 413
       return response.end()
     }
 
     let event
     try {
       event = stripe.webhooks.constructEvent(
-        buffer, signature, process.env.STRIPE_WEBHOOK_SECRET
+        buffer,
+        request.headers['stripe-signature'],
+        process.env.STRIPE_WEBHOOK_SECRET
       )
     } catch (error) {
-      return badRequest(error)
+      response.statusCode = 400
+      return response.end()
     }
 
-    request.log.info({ event }, 'Stripe webhook event')
+    const { id, type } = event
+    request.log.info({ id, type }, 'Stripe webhook event')
 
-    const type = event.type
     if (type === 'checkout.session.completed') {
+      acceptEvent()
       const object = event.data.object
       const customerID = object.customer
       const subscriptionID = object.subscription
@@ -1748,20 +1751,19 @@ route('/stripe-webhook', (request, response) => {
         customerID, subscriptionID
       }, 'Stripe Checkout completed')
       return stripe.customers.retrieve(customerID, (error, customer) => {
-        if (error) return fail(error)
+        if (error) return request.log.error(error)
         request.log.info({ customer }, 'customer')
         if (customer.deleted) {
-          request.log.info('Stripe customer deleted')
-          return succeed()
+          return request.log.info('Stripe customer deleted')
         }
         if (!customer.metadata || !customer.metadata.handle) {
-          return fail(new Error('customer has no handle metadata'))
+          return request.log.error('customer has no handle metadata')
         }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID },
           error => {
-            if (error) return fail(error)
+            if (error) return request.log.error(error)
             if (process.env.ADMIN_EMAIL) {
               const email = customer.email
               mail({
@@ -1772,12 +1774,12 @@ route('/stripe-webhook', (request, response) => {
                 if (error) request.log.warn(error)
               })
             }
-            succeed()
             if (!inProduction) testEvents.emit(type, { handle })
           }
         )
       })
     } else if (type === 'customer.subscription.deleted') {
+      acceptEvent()
       const subscription = event.data.object
       const subscriptionID = subscription.id
       const customerID = subscription.customer
@@ -1785,20 +1787,19 @@ route('/stripe-webhook', (request, response) => {
         customerID, subscriptionID
       }, 'Stripe subscription canceled')
       return stripe.customers.retrieve(customerID, (error, customer) => {
-        if (error) return fail(error)
+        if (error) return request.log.error(error)
         request.log.info({ customer }, 'customer')
         if (customer.deleted) {
-          request.log.info('Stripe customer deleted')
-          return succeed()
+          return request.log.info('Stripe customer deleted')
         }
         if (!customer.metadata || !customer.metadata.handle) {
-          return fail(new Error('customer has no handle metadata'))
+          return request.log.error('customer has no handle metadata')
         }
         const handle = customer.metadata.handle
         return storage.account.update(
           handle, { subscriptionID: undefined },
           error => {
-            if (error) return fail(error)
+            if (error) return request.log.error(error)
             if (process.env.ADMIN_EMAIL) {
               const email = customer.email
               mail({
@@ -1809,29 +1810,22 @@ route('/stripe-webhook', (request, response) => {
                 if (error) request.log.warn(error)
               })
             }
-            succeed()
             if (!inProduction) testEvents.emit(type, { handle })
           }
         )
       })
     }
-    badRequest()
+
+    rejectEvent()
   })
 
-  function badRequest (error) {
-    if (error) request.log.warn(error)
-    response.statusCode = 400
-    return response.end()
-  }
-
-  function succeed () {
+  function acceptEvent () {
     response.statusCode = 200
     response.end()
   }
 
-  function fail (error) {
-    request.log.error(error)
-    response.statusCode = 500
+  function rejectEvent () {
+    response.statusCode = 400
     response.end()
   }
 })
