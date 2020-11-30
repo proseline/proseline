@@ -30,6 +30,7 @@
 //   -> project title
 //   -> journal key pair
 
+const LRUCache = require('lru-cache')
 const assert = require('assert')
 const indices = require('./indices')
 const lock = require('lock').Lock()
@@ -42,12 +43,24 @@ module.exports = {
   token: simple('tokens'),
   session: simple('sessions'),
   project: (() => {
+    const cache = new LRUCache({
+      max: 100,
+      length: (n, key) => 1
+    })
     return {
+      cache,
       write: (discoveryKey, value, callback) => {
         s3.put(keyFor(discoveryKey), value, callback)
       },
       read: (discoveryKey, callback) => {
-        s3.get(keyFor(discoveryKey), callback)
+        const key = keyFor(discoveryKey)
+        const cached = cache.get(key)
+        if (cached) return setImmediate(() => callback(null, cached))
+        s3.get(key, (error, value) => {
+          if (error) return callback(error)
+          cache.set(key, value)
+          callback(null, value)
+        })
       }
     }
     function keyFor (discoveryKey) {
@@ -92,12 +105,24 @@ module.exports = {
     }
   })(),
   entry: (() => {
+    const cache = new LRUCache({
+      max: 500,
+      length: (n, key) => 1
+    })
     return {
+      cache,
       write: (discoveryKey, publicKey, index, value, callback) => {
         s3.put(keyFor(discoveryKey, publicKey, index), value, callback)
       },
       read: (discoveryKey, publicKey, index, callback) => {
-        s3.get(keyFor(discoveryKey, publicKey, index), callback)
+        const key = keyFor(discoveryKey, publicKey)
+        const cached = cache.get(key)
+        if (key) return setImmediate(() => callback(null, cached))
+        s3.get(key, (error, value) => {
+          if (error) return callback(error)
+          cache.set(key, value)
+          callback(null, value)
+        })
       },
       list: (discoveryKey, publicKey, callback) => {
         const directory = path.dirname(keyFor(discoveryKey, publicKey, 0)) + '/'
