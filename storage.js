@@ -26,6 +26,10 @@
 // entries/{project discovery key}/{journal public key}/{lexical index}
 //   -> envelope
 //
+// rollups/{project discovery key}/{journal public key}/{last index}
+//   last index % 100: -> [envelope (n-99)...last index]
+//   last index % 10:  -> [envelope (n-9)...last index]
+//
 // accountProjects/{handle}/{project discovery key}
 //   -> project title
 //   -> journal key pair
