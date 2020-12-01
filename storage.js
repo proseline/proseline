@@ -35,7 +35,6 @@ const assert = require('assert')
 const from2 = require('from2')
 const indices = require('./indices')
 const lock = require('lock').Lock()
-const path = require('path')
 const rollups = require('./rollups')
 const runParallelLimit = require('run-parallel-limit')
 const runSeries = require('run-series')
@@ -46,6 +45,7 @@ module.exports = {
   email: simple('emails'),
   token: simple('tokens'),
   session: simple('sessions'),
+
   project: (() => {
     const cache = new LRUCache({
       max: 100,
@@ -68,9 +68,10 @@ module.exports = {
       }
     }
     function keyFor (discoveryKey) {
-      return path.join('projects', discoveryKey)
+      return join('projects', discoveryKey)
     }
   })(),
+
   accountProject: (() => {
     return {
       write: (handle, discoveryKey, value, callback) => {
@@ -80,17 +81,18 @@ module.exports = {
         s3.get(keyFor(handle, discoveryKey), callback)
       },
       list: (handle, callback) => {
-        const directory = path.dirname(keyFor(handle, 'x')) + '/'
-        s3.list(directory, (error, keys) => {
+        const prefix = dirname(keyFor(handle, 'x')) + '/'
+        s3.list(prefix, (error, keys) => {
           if (error) return callback(error)
-          callback(null, keys.map(key => path.basename(key)))
+          callback(null, keys.map(key => basename(key)))
         })
       }
     }
     function keyFor (handle, discoveryKey) {
-      return path.join('accountProjects', handle, discoveryKey)
+      return join('accountProjects', handle, discoveryKey)
     }
   })(),
+
   projectJournal: (() => {
     return {
       write: (discoveryKey, publicKey, value, callback) => {
@@ -100,14 +102,15 @@ module.exports = {
         s3.get(keyFor(discoveryKey, publicKey), callback)
       },
       list: (discoveryKey, callback) => {
-        const directory = path.dirname(keyFor(discoveryKey, 'x')) + '/'
-        s3.list(directory, callback)
+        const prefix = dirname(keyFor(discoveryKey, 'x')) + '/'
+        s3.list(prefix, callback)
       }
     }
     function keyFor (discoveryKey, journalPublicKey) {
-      return path.join('projectJournals', discoveryKey, journalPublicKey)
+      return join('projectJournals', discoveryKey, journalPublicKey)
     }
   })(),
+
   entry: (() => {
     const cache = new LRUCache({
       max: 500,
@@ -150,10 +153,10 @@ module.exports = {
       },
 
       list: (discoveryKey, publicKey, callback) => {
-        const directory = path.dirname(keyFor(discoveryKey, publicKey, 0)) + '/'
-        s3.list(directory, (error, keys) => {
+        const prefix = dirname(keyFor(discoveryKey, publicKey, 0)) + '/'
+        s3.list(prefix, (error, keys) => {
           if (error) return callback(error)
-          callback(null, keys.map(key => indices.parse(path.basename(key))))
+          callback(null, keys.map(key => indices.parse(basename(key))))
         })
       },
 
@@ -162,7 +165,7 @@ module.exports = {
         s3.first(prefix, (error, key) => {
           if (error) return callback(error)
           if (!key) return callback()
-          callback(null, indices.parse(path.basename(key)))
+          callback(null, indices.parse(basename(key)))
         })
       },
 
@@ -249,9 +252,8 @@ module.exports = {
       }
     }
 
-    // TODO: Replace all uses of path.join for S3 keys.
     function keyFor (discoveryKey, journalPublicKey, index) {
-      return path.join(
+      return join(
         'entries',
         discoveryKey,
         journalPublicKey,
@@ -263,6 +265,7 @@ module.exports = {
       return `rollups/${discoveryKey}/${journalPublicKey}/${lastIndex}`
     }
   })(),
+
   lock
 }
 
@@ -296,9 +299,9 @@ token.use = (id, callback) => {
   })
 }
 
-function simple (subdirectory) {
-  assert(typeof subdirectory === 'string')
-  const keyFor = id => path.join(subdirectory, id)
+function simple (prefix) {
+  assert(typeof prefix === 'string')
+  const keyFor = id => join(prefix, id)
   return {
     write: (id, value, callback) => {
       assert(typeof id === 'string')
@@ -341,7 +344,7 @@ function simple (subdirectory) {
     },
     list: callback => {
       assert(typeof callback === 'function')
-      const directory = path.dirname(keyFor('x')) + '/'
+      const directory = dirname(keyFor('x')) + '/'
       s3.list(directory, callback)
     },
     delete: (id, callback) => {
@@ -375,4 +378,22 @@ function simple (subdirectory) {
       return callback(error)
     })
   }
+}
+
+// Key Helpers
+
+function dirname (key) {
+  return key
+    .split(s3.DELIMITER)
+    .slice(0, -1)
+    .join(s3.DELIMITER)
+}
+
+function basename (key) {
+  const split = key.split(s3.DELIMITER)
+  return split[split.length - 1]
+}
+
+function join (...parts) {
+  return parts.join(s3.DELIMITER)
 }
