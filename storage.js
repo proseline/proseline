@@ -32,9 +32,13 @@
 
 const LRUCache = require('lru-cache')
 const assert = require('assert')
+const from2 = require('from2')
 const indices = require('./indices')
 const lock = require('lock').Lock()
 const path = require('path')
+const rollups = require('./rollups')
+const runParallelLimit = require('run-parallel-limit')
+const runSeries = require('run-series')
 const s3 = require('./s3')
 
 module.exports = {
@@ -111,27 +115,141 @@ module.exports = {
     })
     return {
       cache,
+
       write: (discoveryKey, publicKey, index, value, callback) => {
-        s3.put(keyFor(discoveryKey, publicKey, index), value, callback)
+        const key = keyFor(discoveryKey, publicKey, index)
+        s3.put(key, value, (error) => {
+          if (error) return callback(error)
+          // Create a roll-up if appropriate.
+          const range = rollups.group(index)
+          if (!range) return callback()
+          const tasks = []
+          for (let index = range.first; index < range.last; index++) {
+            tasks.push(done => {
+              s3.get(keyFor(discoveryKey, publicKey, index), done)
+            })
+          }
+          tasks.push(done => done(null, value))
+          runParallelLimit(tasks, 3, (error, entries) => {
+            if (error) return callback(error)
+            const key = rollUpKey(discoveryKey, publicKey, index)
+            s3.put(key, entries, callback)
+          })
+        })
       },
+
       read: (discoveryKey, publicKey, index, callback) => {
-        const key = keyFor(discoveryKey, publicKey)
+        const key = keyFor(discoveryKey, publicKey, index)
         const cached = cache.get(key)
-        if (key) return setImmediate(() => callback(null, cached))
+        if (cached) return setImmediate(() => callback(null, cached))
         s3.get(key, (error, value) => {
           if (error) return callback(error)
           cache.set(key, value)
           callback(null, value)
         })
       },
+
       list: (discoveryKey, publicKey, callback) => {
         const directory = path.dirname(keyFor(discoveryKey, publicKey, 0)) + '/'
         s3.list(directory, (error, keys) => {
           if (error) return callback(error)
-          callback(null, keys.map(key => indices.parse(key)))
+          callback(null, keys.map(key => indices.parse(path.basename(key))))
+        })
+      },
+
+      head: (discoveryKey, publicKey, callback) => {
+        const prefix = `entries/${discoveryKey}/${publicKey}`
+        s3.first(prefix, (error, key) => {
+          if (error) return callback(error)
+          if (!key) return callback()
+          callback(null, indices.parse(path.basename(key)))
+        })
+      },
+
+      // Return a stream of journal entries, starting with
+      // index `from`, making as few S3 queries as possible.
+      stream: (discoveryKey, publicKey, from = 0) => {
+        let index = from
+        let rollup = []
+        let head
+        return from2.obj((_, next) => {
+          // We're done streaming when we reach the head.
+          if (index > head) return next(null, null)
+
+          // The entry to stream for this invocation, if any.
+          let result
+
+          // Compile a list of asynchronous tasks to run.
+          const tasks = []
+
+          // If we don't yet know the index of the last
+          // entry in the journal, or "head", read it first.
+          if (!head) {
+            tasks.push(done => {
+              module.exports.entry.head(discoveryKey, publicKey, (error, read) => {
+                if (error) return done(error)
+                head = read
+                done()
+              })
+            })
+          }
+
+          // If we've already read a roll-up, stream from there.
+          if (rollup.length !== 0) {
+            tasks.push(done => {
+              result = rollup.shift()
+              done()
+            })
+
+          // Otherwise...
+          } else {
+            // Should we read a roll-up, instead of just one entry?
+            const lastIndex = rollups.locate(index, head)
+
+            // Read a roll-up.
+            if (lastIndex) {
+              // Read the roll-up containing the entry.
+              tasks.push(done => {
+                const key = rollUpKey(discoveryKey, publicKey, lastIndex)
+                s3.get(key, (error, read) => {
+                  if (error) return done(error)
+                  rollup = read
+                  // The entry we need to stream may not be
+                  // the first entry in the roll-up we just
+                  // read. Shift off any prior entries.
+                  while (rollup[0].index !== index) rollup.shift()
+                  // Stream the entry from the roll-up.
+                  result = rollup.shift()
+                  done()
+                })
+              })
+
+            // Read the entry individually.
+            } else {
+              tasks.push(done => {
+                module.exports.entry.read(discoveryKey, publicKey, index, (error, read) => {
+                  if (error) return done(error)
+                  result = read
+                  done()
+                })
+              })
+            }
+          }
+
+          // Run the tasks.
+          runSeries(tasks, (error) => {
+            if (error) return next(error)
+            if (result) {
+              index++
+              return next(null, result)
+            }
+            next(null, null)
+          })
         })
       }
     }
+
+    // TODO: Replace all uses of path.join for S3 keys.
     function keyFor (discoveryKey, journalPublicKey, index) {
       return path.join(
         'entries',
@@ -139,6 +257,10 @@ module.exports = {
         journalPublicKey,
         indices.stringify(index)
       )
+    }
+
+    function rollUpKey (discoveryKey, journalPublicKey, lastIndex) {
+      return `rollups/${discoveryKey}/${journalPublicKey}/${lastIndex}`
     }
   })(),
   lock
