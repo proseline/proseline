@@ -1,37 +1,37 @@
 // Predicates to check expiration dates.
 
-exports.csrfToken = dateString => expired({
+export const csrfToken = dateString => expired({
   dateString,
   lifetime: days(7)
 })
 
-exports.accountLock = dateString => expired({
+export const accountLock = dateString => expired({
   dateString,
   lifetime: days(1)
 })
 
-exports.changeEMailToken = dateString => expired({
+export const changeEMailToken = dateString => expired({
   dateString,
   lifetime: hours(1)
 })
 
-exports.confirmAccountToken = dateString => expired({
+export const confirmAccountToken = dateString => expired({
   dateString,
   lifetime: days(1)
 })
 
-exports.resetPasswordToken = dateString => expired({
+export const resetPasswordToken = dateString => expired({
   dateString,
   lifetime: hours(1)
 })
 
 const actionToExpiration = {
-  confirm: exports.confirmAccountToken,
-  email: exports.changeEMailToken,
-  reset: exports.resetPasswordToken
+  confirm: confirmAccountToken,
+  email: changeEMailToken,
+  reset: resetPasswordToken
 }
 
-exports.token = token => {
+export const token = token => {
   const predicate = actionToExpiration[token.action]
   if (!predicate) return false
   return predicate(token.created)

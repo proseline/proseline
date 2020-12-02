@@ -1,7 +1,14 @@
 // JSON Schemas and validation functions
 
-const assert = require('assert')
-const crypto = require('./crypto')
+import AJV from 'ajv'
+import assert from 'assert'
+import {
+  digestBytes,
+  distributionKeyBytes,
+  nonceBytes,
+  publicKeyBytes,
+  signatureBytes
+} from './crypto.js'
 
 // Helper Functions
 
@@ -47,12 +54,12 @@ const name = { type: 'string', minLength: 1, maxLength: 256 }
 const timestamp = { type: 'string', format: 'date-time' }
 const text = { type: 'string', minLength: 1 }
 
-const digest = hexString(crypto.digestBytes)
-const discoveryKey = hexString(crypto.digestBytes)
-const distributionKey = hexString(crypto.distributionKeyBytes)
-const nonce = hexString(crypto.nonceBytes)
-const publicKey = hexString(crypto.publicKeyBytes)
-const signature = hexString(crypto.signatureByes)
+const digest = hexString(digestBytes)
+const discoveryKey = hexString(digestBytes)
+const distributionKey = hexString(distributionKeyBytes)
+const nonce = hexString(nonceBytes)
+const publicKey = hexString(publicKeyBytes)
+const signature = hexString(signatureBytes)
 
 const encrypted = {
   type: 'object',
@@ -67,7 +74,7 @@ const encrypted = {
 // journal entries.
 //
 // Intros serve the same role as [user] data in ~/.gitconfig.
-const intro = exports.intro = {
+export const intro = {
   type: 'object',
   properties: {
     type: { const: 'intro' },
@@ -84,7 +91,7 @@ const intro = exports.intro = {
 // Drafts contain the content of a version of a document.
 //
 // Drafts work like commits in Git.
-const draft = exports.draft = {
+export const draft = {
   type: 'object',
   properties: {
     type: { const: 'draft' },
@@ -107,7 +114,7 @@ const draft = exports.draft = {
 // They can be moved from draft to draft over time.
 //
 // Marks work like branches and tags in Git.
-const mark = exports.mark = {
+export const mark = {
   type: 'object',
   properties: {
     type: { const: 'mark' },
@@ -131,7 +138,7 @@ const mark = exports.mark = {
 // Notes associate text with ranges of text within drafts.
 //
 // Notes work like comments in word processors.
-const note = exports.note = {
+export const note = {
   type: 'object',
   version: { const: '1.0.0-pre' },
   properties: {
@@ -161,7 +168,7 @@ const note = exports.note = {
 }
 
 // Replies associate text with notes.
-const reply = exports.reply = {
+export const reply = {
   type: 'object',
   version: { const: '1.0.0-pre' },
   properties: {
@@ -186,7 +193,7 @@ const reply = exports.reply = {
 //
 // When users make typos or mistakes in notes or replies,
 // they use corrections to fix them.
-const correction = exports.correction = {
+export const correction = {
   type: 'object',
   properties: {
     type: { const: 'correction' },
@@ -220,7 +227,7 @@ Object.keys(entryTypes).forEach(key => {
   schema.required.push('index', 'discoveryKey')
 })
 
-exports.entry = {
+export const entry = {
   type: 'object',
   oneOf: Object.values(entryTypes)
 }
@@ -229,7 +236,7 @@ exports.entry = {
 
 // Envelopes wrap encrypted entries with signatures
 // and indexing information.
-exports.envelope = {
+export const envelope = {
   type: 'object',
   properties: {
     version: { const: '1.0.0-pre' },
@@ -259,7 +266,7 @@ exports.envelope = {
 //
 // Users send invitations to the server, which forwards them
 // to the user's other devices.
-exports.invitation = {
+export const invitation = {
   type: 'object',
   properties: {
     version: { const: '1.0.0-pre' },
@@ -274,11 +281,22 @@ exports.invitation = {
 }
 
 // Export Validation Functions
-const ajv = require('ajv')()
-exports.validate = {}
-Object.keys(exports).forEach(key => {
-  const compiled = ajv.compile(exports[key])
-  exports.validate[key] = data => {
+export const validate = {}
+const ajv = new AJV()
+const schemas = {
+  intro,
+  draft,
+  mark,
+  note,
+  reply,
+  correction,
+  entry,
+  envelope,
+  invitation
+}
+Object.keys(schemas).forEach(key => {
+  const compiled = ajv.compile(schemas[key])
+  validate[key] = data => {
     const valid = compiled(data)
     return { valid, errors: valid ? [] : compiled.errors }
   }

@@ -1,12 +1,12 @@
 // Verify submitted passwords against stored hashes.
 
-const assert = require('assert')
-const expired = require('../expired')
-const scheme = require('./scheme')
-const securePassword = require('secure-password')
-const storage = require('../storage')
+import assert from 'assert'
+import { accountLock as accountLockExpired } from '../expired.js'
+import scheme from './scheme.js'
+import securePassword from 'secure-password'
+import * as storage from '../storage.js'
 
-module.exports = (handle, password, callback) => {
+export default (handle, password, callback) => {
   assert(typeof handle === 'string')
   assert(typeof password === 'string')
   assert(typeof callback === 'function')
@@ -25,7 +25,7 @@ module.exports = (handle, password, callback) => {
         return callback(invalidError, account)
       }
       const locked = account.locked
-      if (locked && !expired.accountLock(locked)) {
+      if (locked && !accountLockExpired(locked)) {
         const lockedError = new Error('account locked')
         lockedError.statusCode = 401
         return callback(lockedError, account)

@@ -10,7 +10,7 @@
 // These make it much more convenient do achieve conditional
 // markup using expressions, without control structures.
 
-module.exports = (strings, ...values) => {
+export default (strings, ...values) => {
   let result = ''
   strings.forEach(function (string, index) {
     result += string

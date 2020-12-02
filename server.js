@@ -5,8 +5,11 @@
 
 // Logging
 
-const logger = require('pino')()
-const addLoggers = require('pino-http')({ logger })
+import pino from 'pino'
+import pinoHTTP from 'pino-http'
+
+const logger = pino()
+const addLoggers = pinoHTTP({ logger })
 
 // Environment
 

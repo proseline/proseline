@@ -1,18 +1,17 @@
-const assert = require('assert')
+import assert from 'assert'
 
-module.exports = ({ browser, port, handle, password }, callback) => {
+export default async ({ browser, port, handle, password }) => {
   assert(browser)
   assert(Number.isSafeInteger(port))
   assert(typeof handle === 'string')
   assert(typeof password === 'string')
-  return browser.navigateTo('http://localhost:' + port)
-    .then(() => browser.$('#login'))
-    .then(a => a.click())
-    .then(() => browser.$('#loginForm input[name="handle"]'))
-    .then(input => input.addValue(handle))
-    .then(() => browser.$('#loginForm input[name="password"]'))
-    .then(input => input.addValue(password))
-    .then(() => browser.$('#loginForm button[type="submit"]'))
-    .then(submit => submit.click())
-    .catch(callback)
+  await browser.navigateTo('http://localhost:' + port)
+  const login = await browser.$('#login')
+  await login.click()
+  const handleInput = await browser.$('#loginForm input[name="handle"]')
+  await handleInput.addValue(handle)
+  const passwordInput = await browser.$('#loginForm input[name="password"]')
+  await passwordInput.addValue(password)
+  const submitButton = await browser.$('#loginForm button[type="submit"]')
+  await submitButton.click()
 }

@@ -1,67 +1,94 @@
-const ajv = require('ajv')()
-const crypto = require('../crypto')
-const schemas = require('../schemas')
-const tape = require('tape')
+import AJV from 'ajv'
+import * as schemas from '../schemas.js'
+import tap from 'tap'
+import {
+  decryptBinary,
+  decryptEntry,
+  decryptInvitation,
+  decryptString,
+  encryptBinary,
+  encryptInvitation,
+  encryptJSON,
+  encryptString,
+  envelop,
+  generateDiscoveryKey,
+  generateDistributionKey,
+  generateEncryptionKey,
+  generateKeyPair,
+  generateKeyPairFromSeed,
+  generateKeyPairSeed,
+  generateNonce,
+  hash,
+  hashJSON,
+  randomCiphertext,
+  randomHex,
+  signBinary,
+  signJSON,
+  verifyEnvelope,
+  verifyJSON
+} from '../crypto.js'
 
-tape('encryption round trip', function (test) {
+const ajv = new AJV()
+
+tap.test('encryption round trip', function (test) {
   const plaintext = 'plaintext message'
-  const key = crypto.encryptionKey()
-  const nonce = crypto.nonce()
-  const encrypted = crypto.encryptString({
+  const key = generateEncryptionKey()
+  const nonce = generateNonce()
+  const encrypted = encryptString({
     plaintext, nonce, key
   })
-  const decrypted = crypto.decryptString({
+  const decrypted = decryptString({
     ciphertext: encrypted, nonce, key
   })
   test.same(plaintext, decrypted, 'identical')
   test.end()
 })
 
-tape('bad decryption', function (test) {
-  const random = crypto.randomCiphertext(64)
-  const key = crypto.encryptionKey()
-  const nonce = crypto.nonce()
-  const decrypted = crypto.decryptString({
+tap.test('bad decryption', function (test) {
+  const random = randomCiphertext(64)
+  const key = generateEncryptionKey()
+  const nonce = generateNonce()
+  const decrypted = decryptString({
     ciphertext: random, nonce, key
   })
   test.assert(decrypted === false)
   test.end()
 })
 
-tape('binary encryption round trip', function (test) {
-  const binary = crypto.randomHex(32)
-  const key = crypto.encryptionKey()
-  const nonce = crypto.nonce()
-  const encrypted = crypto.encryptBinary({
+tap.test('binary encryption round trip', function (test) {
+  const binary = randomHex(32)
+  const key = generateEncryptionKey()
+  const nonce = generateNonce()
+  const encrypted = encryptBinary({
     plaintext: binary, nonce, key
   })
-  const decrypted = crypto.decryptBinary({
+  const decrypted = decryptBinary({
     ciphertext: encrypted, nonce, key
   })
   test.same(binary, decrypted, 'identical')
   test.end()
 })
 
-tape('binary bad decryption', function (test) {
-  const random = crypto.randomHex(32)
-  const key = crypto.encryptionKey()
-  const nonce = crypto.nonce()
-  const decrypted = crypto.decryptBinary({
+tap.test('binary bad decryption', function (test) {
+  const random = randomHex(32)
+  const key = generateEncryptionKey()
+  const nonce = generateNonce()
+  const decrypted = decryptBinary({
     ciphertext: random, nonce, key
   })
   test.assert(decrypted === false)
   test.end()
 })
 
-tape('signature', function (test) {
-  const keyPair = crypto.keyPair()
+tap.test('signature', function (test) {
+  const keyPair = generateKeyPair()
   const object = { entry: 'plaintext message' }
-  const signature = crypto.signJSON({
+  const signature = signJSON({
     message: object,
     secretKey: keyPair.secretKey
   })
   test.assert(
-    crypto.verifyJSON({
+    verifyJSON({
       message: object,
       signature,
       publicKey: keyPair.publicKey
@@ -70,15 +97,15 @@ tape('signature', function (test) {
   test.end()
 })
 
-tape('signature with body key', function (test) {
-  const keyPair = crypto.keyPair()
+tap.test('signature with body key', function (test) {
+  const keyPair = generateKeyPair()
   const object = { text: 'plaintext message' }
-  const signature = crypto.signJSON({
+  const signature = signJSON({
     message: object,
     secretKey: keyPair.secretKey
   })
   test.assert(
-    crypto.verifyJSON({
+    verifyJSON({
       message: object,
       signature,
       publicKey: keyPair.publicKey
@@ -87,61 +114,61 @@ tape('signature with body key', function (test) {
   test.end()
 })
 
-tape('signature with keys from seed', function (test) {
+tap.test('signature with keys from seed', function (test) {
   const plaintext = 'plaintext message'
-  const seed = crypto.keyPairSeed()
-  const keyPair = crypto.keyPairFromSeed(seed)
+  const seed = generateKeyPairSeed()
+  const keyPair = generateKeyPairFromSeed(seed)
   const object = { entry: plaintext }
-  const signature = crypto.signJSON({
+  const signature = signJSON({
     message: object, secretKey: keyPair.secretKey
   })
   test.assert(
-    crypto.verifyJSON({
+    verifyJSON({
       message: object, signature, publicKey: keyPair.publicKey
     })
   )
   test.end()
 })
 
-tape('hash', function (test) {
+tap.test('hash', function (test) {
   const input = 'this is some input'
-  const digest = crypto.hash(input)
+  const digest = hash(input)
   test.assert(typeof digest === 'string')
   test.end()
 })
 
-tape('hashJSON', function (test) {
+tap.test('hashJSON', function (test) {
   const input = { text: 'this is some input' }
-  const digest = crypto.hashJSON(input)
+  const digest = hashJSON(input)
   test.assert(typeof digest === 'string')
   test.end()
 })
 
-tape('random', function (test) {
-  const random = crypto.randomHex(32)
+tap.test('random', function (test) {
+  const random = randomHex(32)
   test.assert(typeof random === 'string')
   test.end()
 })
 
-tape('read key', function (test) {
-  const key = crypto.encryptionKey()
+tap.test('read key', function (test) {
+  const key = generateEncryptionKey()
   test.assert(typeof key === 'string')
   test.end()
 })
 
-tape('discovery key', function (test) {
-  const distributionKey = crypto.distributionKey()
+tap.test('discovery key', function (test) {
+  const distributionKey = generateDistributionKey()
   test.assert(typeof distributionKey === 'string')
-  const projectDiscoverKey = crypto.discoveryKey(distributionKey)
+  const projectDiscoverKey = generateDiscoveryKey(distributionKey)
   test.assert(typeof projectDiscoverKey === 'string')
   test.end()
 })
 
-tape('verify envelope', function (test) {
-  const distributionKey = crypto.distributionKey()
-  const discoveryKey = crypto.discoveryKey(distributionKey)
+tap.test('verify envelope', function (test) {
+  const distributionKey = generateDistributionKey()
+  const discoveryKey = generateDiscoveryKey(distributionKey)
   const index = 1
-  const prior = crypto.hash(crypto.randomHex(64))
+  const prior = hash(randomHex(64))
   const entry = {
     version: '1.0.0-pre',
     discoveryKey,
@@ -152,13 +179,13 @@ tape('verify envelope', function (test) {
     device: 'laptop',
     timestamp: new Date().toISOString()
   }
-  const journalKeyPair = crypto.keyPair()
+  const journalKeyPair = generateKeyPair()
   const journalPublicKey = journalKeyPair.publicKey
-  const projectKeyPair = crypto.keyPair()
+  const projectKeyPair = generateKeyPair()
   const projectPublicKey = projectKeyPair.publicKey
-  const encryptionKey = crypto.encryptionKey()
-  const nonce = crypto.nonce()
-  const ciphertext = crypto.encryptJSON({
+  const encryptionKey = generateEncryptionKey()
+  const nonce = generateNonce()
+  const ciphertext = encryptJSON({
     plaintext: entry,
     nonce,
     key: encryptionKey
@@ -169,32 +196,32 @@ tape('verify envelope', function (test) {
     journalPublicKey,
     index,
     prior,
-    journalSignature: crypto.signBinary({
+    journalSignature: signBinary({
       message: ciphertext, secretKey: journalKeyPair.secretKey
     }),
-    projectSignature: crypto.signBinary({
+    projectSignature: signBinary({
       message: ciphertext, secretKey: projectKeyPair.secretKey
     }),
     entry: { ciphertext, nonce }
   }
   ajv.validate(schemas.envelope, envelope)
   test.same(ajv.errors, null, 'no schema errors')
-  const errors = crypto.verifyEnvelope({
+  const errors = verifyEnvelope({
     envelope, projectPublicKey, encryptionKey
   })
   test.same(errors, [], 'no signature validation errors')
   test.end()
 })
 
-tape('envelope generate, verify, decrypt', function (test) {
-  const distributionKey = crypto.distributionKey()
-  const discoveryKey = crypto.discoveryKey(distributionKey)
-  const journalKeyPair = crypto.keyPair()
-  const projectKeyPair = crypto.keyPair()
+tap.test('envelope generate, verify, decrypt', function (test) {
+  const distributionKey = generateDistributionKey()
+  const discoveryKey = generateDiscoveryKey(distributionKey)
+  const journalKeyPair = generateKeyPair()
+  const projectKeyPair = generateKeyPair()
   const projectPublicKey = projectKeyPair.publicKey
-  const encryptionKey = crypto.encryptionKey()
+  const encryptionKey = generateEncryptionKey()
   const index = 1
-  const prior = crypto.hash(crypto.randomHex(64))
+  const prior = hash(randomHex(64))
   const entry = {
     version: '1.0.0-pre',
     discoveryKey,
@@ -211,7 +238,7 @@ tape('envelope generate, verify, decrypt', function (test) {
   test.same(ajv.errors, null, 'no entry schema errors')
   let envelope
   test.doesNotThrow(function () {
-    envelope = crypto.envelope({
+    envelope = envelop({
       journalKeyPair,
       projectKeyPair,
       encryptionKey,
@@ -222,26 +249,26 @@ tape('envelope generate, verify, decrypt', function (test) {
   test.same(ajv.errors, null, 'no schema validation errors')
   let errors
   test.doesNotThrow(function () {
-    errors = crypto.verifyEnvelope({
+    errors = verifyEnvelope({
       envelope, projectPublicKey, encryptionKey
     })
   }, '.verifyEnvelope() does not throw')
   test.same(errors, [], '.verifyEnvelope() returns no errors')
-  const decrypted = crypto.decryptEntry({ envelope, encryptionKey })
+  const decrypted = decryptEntry({ envelope, encryptionKey })
   test.same(entry, decrypted, 'decrypted')
   test.end()
 })
 
-tape('invitation round trip', function (test) {
-  const distributionKey = crypto.distributionKey()
-  const keyPair = crypto.keyPair()
+tap.test('invitation round trip', function (test) {
+  const distributionKey = generateDistributionKey()
+  const keyPair = generateKeyPair()
   const publicKey = keyPair.publicKey
   const secretKey = keyPair.secretKey
-  const encryptionKey = crypto.encryptionKey()
+  const encryptionKey = generateEncryptionKey()
   const title = 'Test Title'
   let invitation
   test.doesNotThrow(function () {
-    invitation = crypto.encryptInvitation({
+    invitation = encryptInvitation({
       distributionKey,
       publicKey,
       encryptionKey,
@@ -249,7 +276,7 @@ tape('invitation round trip', function (test) {
       title
     })
   }, '.invitation() does not throw')
-  const opened = crypto.decryptInvitation({
+  const opened = decryptInvitation({
     invitation, encryptionKey
   })
   test.same(opened.secretKey, secretKey, 'secretKey')

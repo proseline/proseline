@@ -1,7 +1,7 @@
-const rollups = require('../rollups')
-const tape = require('tape')
+import { group, locate } from '../rollups.js'
+import tap from 'tap'
 
-tape('rollup: location', test => {
+tap.test('rollup: location', test => {
   const vectors = [
     // [index, head, result]
     [0, 100, false],
@@ -15,17 +15,17 @@ tape('rollup: location', test => {
     [70, 80, false]
   ]
   vectors.forEach(vector => test.same(
-    rollups.locate(vector[0], vector[1]),
+    locate(vector[0], vector[1]),
     vector[2],
     `(${vector[0]}, ${vector[1]}) -> ${vector[2]}`
   ))
   test.throws(() => {
-    rollups.locate(100, 10)
+    locate(100, 10)
   }, /greater than/, 'throws when index > head')
   test.end()
 })
 
-tape('rollup: grouping', test => {
+tap.test('rollup: grouping', test => {
   const vectors = [
     [10, { first: 1, last: 10 }],
     [100, { first: 1, last: 100 }],
@@ -36,7 +36,7 @@ tape('rollup: grouping', test => {
   ]
   vectors.forEach(vector => {
     test.same(
-      rollups.group(vector[0]), vector[1],
+      group(vector[0]), vector[1],
       `$({vector[0]}) -> ${JSON.stringify(vector[1])}`
     )
   })

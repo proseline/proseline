@@ -1,14 +1,14 @@
-const crypto = require('../crypto')
-const runSeries = require('run-series')
-const s3 = require('../s3/test')
-const storage = require('../storage')
-const tape = require('tape')
+import * as crypto from '../crypto.js'
+import runSeries from 'run-series'
+import * as s3 from '../s3.js'
+import * as storage from '../storage.js'
+import tap from 'tap'
 
-const encryptionKey = crypto.encryptionKey()
-const discoveryKey = crypto.discoveryKey(encryptionKey)
-const { publicKey } = crypto.keyPair()
+const encryptionKey = crypto.generateEncryptionKey()
+const discoveryKey = crypto.generateDiscoveryKey(encryptionKey)
+const { publicKey } = crypto.generateKeyPair()
 
-tape('entry streaming', test => {
+tap.test('entry streaming', test => {
   const entries = [...new Array(100)].map((_, index) => { return { index } })
   const writeTasks = entries.map((entry, index) => done => {
     storage.entry.write(discoveryKey, publicKey, index, entry, done)
@@ -31,7 +31,7 @@ tape('entry streaming', test => {
   })
 })
 
-tape('entry streaming from index', test => {
+tap.test('entry streaming from index', test => {
   const entries = [...new Array(100)].map((_, index) => { return { index } })
   const writeTasks = entries.map((entry, index) => done => {
     storage.entry.write(discoveryKey, publicKey, index, entry, done)

@@ -1,10 +1,10 @@
-const fs = require('fs')
-const handle = require('../')
-const http = require('http')
-const pino = require('pino')
-const pinoHTTP = require('pino-http')
-const simpleConcat = require('simple-concat')
-const tape = require('tape')
+import fs from 'fs'
+import handle from '../index.js'
+import http from 'http'
+import pino from 'pino'
+import pinoHTTP from 'pino-http'
+import simpleConcat from 'simple-concat'
+import tap from 'tap'
 
 simple({
   path: '/',
@@ -83,7 +83,7 @@ function simple ({
   mime,
   content
 }) {
-  tape(`${method} ${path}`, test => {
+  tap.test(`${method} ${path}`, test => {
     server((port, close) => {
       http.request({ auth, method, port, path })
         .once('response', response => {
@@ -100,12 +100,12 @@ function simple ({
                 body.toString().includes(content),
                 content
               )
-              test.end()
               close()
+              test.end()
             })
           }
-          test.end()
           close()
+          test.end()
         })
         .end()
     })
@@ -120,11 +120,12 @@ function server (callback) {
     addLoggers(request, response)
     handle(request, response)
   })
-  server.listen(0, function () {
-    const port = this.address().port
+  server.listen(0, () => {
+    const port = server.address().port
     callback(port, cleanup)
   })
   function cleanup () {
+    console.log('closing')
     server.close()
   }
 }

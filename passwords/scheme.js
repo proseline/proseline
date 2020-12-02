@@ -1,1 +1,3 @@
-module.exports = require('secure-password')()
+import securePassword from 'secure-password'
+
+export default securePassword()

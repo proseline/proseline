@@ -3,7 +3,7 @@
 
 // Given the index of an entry, return a range of entries to
 // roll-up with it.
-exports.group = index => {
+export const group = index => {
   if (index % 100 === 0) return { first: index - 99, last: index }
   if (index % 10 === 0) return { first: index - 9, last: index }
   return false
@@ -12,7 +12,7 @@ exports.group = index => {
 // Given the index of an entry and the current head of its
 // journal, return the last index in a roll-up that includes
 // the requested entry and at least one more entry.
-exports.locate = (index, head) => {
+export const locate = (index, head) => {
   if (index > head) {
     throw new Error(`index ${index} greater than head ${head}`)
   }

@@ -1,10 +1,10 @@
-const AJV = require('ajv')
-const crypto = require('../crypto')
-const schemas = require('../schemas')
-const tape = require('tape')
+import AJV from 'ajv'
+import { generateDistributionKey, generateDiscoveryKey } from '../crypto.js'
+import * as schemas from '../schemas.js'
+import tap from 'tap'
 
 Object.keys(schemas).forEach(id => {
-  tape(id, test => {
+  tap.test(id, test => {
     const ajv = new AJV()
     ajv.validateSchema(schemas[id])
     test.deepEqual(ajv.errors, null, 'valid schema')
@@ -12,10 +12,10 @@ Object.keys(schemas).forEach(id => {
   })
 })
 
-tape('intro', test => {
+tap.test('intro', test => {
   const intro = {
     version: '1.0.0-pre',
-    discoveryKey: crypto.discoveryKey(crypto.distributionKey()),
+    discoveryKey: generateDiscoveryKey(generateDistributionKey()),
     type: 'intro',
     name: 'Kyle E. Mitchell',
     device: 'laptop',

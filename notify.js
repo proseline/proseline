@@ -1,9 +1,9 @@
 // Send e-mails based on templates.
 
-const mail = require('./mail')
-const markdown = require('./markdown')
+import mail from './mail.js'
+import markdown from './markdown.js'
 
-exports.confirmAccount = ({ to, handle, url }, callback) => {
+export const confirmAccount = ({ to, handle, url }, callback) => {
   send({
     to,
     subject: 'Confirm Proseline Account',
@@ -15,7 +15,7 @@ Follow this link to confirm your Proseline account:
   }, callback)
 }
 
-exports.passwordReset = ({ to, handle, url }, callback) => {
+export const passwordReset = ({ to, handle, url }, callback) => {
   send({
     to,
     subject: 'Reset Proseline Password',
@@ -27,7 +27,7 @@ To reset the password for your Proseline account, follow this link:
   }, callback)
 }
 
-exports.passwordChanged = ({ to }, callback) => {
+export const passwordChanged = ({ to }, callback) => {
   send({
     to,
     subject: 'Proseline Password Change',
@@ -37,7 +37,7 @@ The password for your Proseline account on was changed.
   }, callback)
 }
 
-exports.handleReminder = ({ to, handle }, callback) => {
+export const handleReminder = ({ to, handle }, callback) => {
   send({
     to,
     subject: 'Your Proseline Handle',
@@ -45,7 +45,7 @@ exports.handleReminder = ({ to, handle }, callback) => {
   }, callback)
 }
 
-exports.confirmEMailChange = ({ to, url }, callback) => {
+export const confirmEMailChange = ({ to, url }, callback) => {
   send({
     to,
     subject: 'Confirm E-Mail Change',

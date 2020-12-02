@@ -1,13 +1,16 @@
 {
   "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "ajv": "^6.12.6",
     "aws-sdk": "^2.799.0",
     "busboy": "^0.3.1",
-    "commonmark": "^0.29.2",
+    "commonmark": "^0.28.0",
     "cookie": "^0.4.1",
     "do-not-cache": "^1.0.1",
-    "english-months": "^1.0.3",
     "escape-html": "^1.0.3",
     "fast-json-stable-stringify": "^2.1.0",
     "from2": "^2.3.0",
@@ -38,7 +41,7 @@
     "simple-concat": "^1.0.1",
     "sodium-native": "^3.2.0",
     "standard": "^16.0.3",
-    "tape": "^5.0.1",
+    "tap": "^14.11.0",
     "webdriverio": "^6.10.2"
   },
   "scripts": {
@@ -49,6 +52,6 @@
     "licenses": "licensee --errors-only",
     "lint": "standard",
     "start": "./start",
-    "test": "NODE_ENV=test tape test/*.test.js"
+    "test": "NODE_ENV=test tap --before test/before.js --after test/after.js --no-timeout --no-esm --reporter=tap test/*.test.js"
   }
 }

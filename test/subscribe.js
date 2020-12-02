@@ -1,7 +1,7 @@
-const events = require('../test-events')
-const timeout = require('./timeout')
+import events from '../test-events.js'
+import timeout from './timeout.js'
 
-module.exports = async ({
+export default async ({
   browser,
   port,
   test,
@@ -53,12 +53,12 @@ module.exports = async ({
     new Promise((resolve, reject) => {
       events.once('checkout.session.completed', () => resolve())
     }),
-    async () => {
+    (async () => {
       // Confirm
       const message = await browser.$('.message')
       await message.waitForExist({ timeout: 20000 })
       const messageText = await message.getText()
       test.assert(messageText.includes('Thank you'), 'subscribed')
-    }
+    })()
   ])
 }

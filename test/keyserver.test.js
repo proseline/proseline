@@ -1,9 +1,9 @@
-const crypto = require('crypto')
-const has = require('has')
-const protocol = require('../keyserver')
-const tape = require('tape')
+import crypto from 'crypto'
+import has from 'has'
+import protocol from '../keyserver.js'
+import tap from 'tap'
 
-tape('keyserver protocol', test => {
+tap.test('keyserver protocol', test => {
   // client login
 
   const clientLogin = protocol.client.login({

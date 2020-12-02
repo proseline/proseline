@@ -1,8 +1,8 @@
 // Render Markdown as HTML.
 
-const commonmark = require('commonmark')
+import commonmark from 'commonmark'
 
-module.exports = markup => {
+export default markup => {
   const reader = new commonmark.Parser()
   const writer = new commonmark.HtmlRenderer({ safe: true })
   const parsed = reader.parse(markup)

@@ -1,13 +1,13 @@
-const http = require('http')
-const server = require('./server')
-const signup = require('./signup')
-const tape = require('tape')
-const verifyLogIn = require('./verify-login')
-const webdriver = require('./webdriver')
+import http from 'http'
+import interactive from './interactive.js'
+import server from './server.js'
+import signup from './signup.js'
+import tap from 'tap'
+import verifyLogIn from './verify-login.js'
 
 const path = '/login'
 
-tape('GET ' + path, test => {
+tap.test('GET ' + path, test => {
   server((port, done) => {
     http.request({ path, port })
       .once('response', response => {
@@ -19,177 +19,70 @@ tape('GET ' + path, test => {
   })
 })
 
-tape('browse ' + path, test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#login'))
-      .then(a => a.click())
-      .then(() => browser.$('h2'))
-      .then(title => title.getText())
-      .then(text => {
-        test.equal(text, 'Log In', '<h2>Log In</h2>')
-        test.end()
-        done()
-      })
-      .catch(error => {
-        test.fail(error)
-        test.end()
-        done()
-      })
-  })
+interactive('browse ' + path, async ({ browser, port, test }) => {
+  await browser.navigateTo('http://localhost:' + port)
+  const login = await browser.$('#login')
+  await login.click()
+  const h2 = await browser.$('h2')
+  const text = await h2.getText()
+  test.equal(text, 'Log In', '<h2>Log In</h2>')
 })
 
-tape('sign in', test => {
+interactive('sign in', async ({ browser, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => new Promise((resolve, reject) => {
-        signup({
-          browser, port, handle, password, email
-        }, error => {
-          if (error) return reject(error)
-          resolve()
-        })
-      }))
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#login'))
-      .then(a => a.click())
-      .then(() => browser.$('#loginForm input[name="handle"]'))
-      .then(input => input.addValue(handle))
-      .then(() => browser.$('#loginForm input[name="password"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#loginForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => verifyLogIn({
-        browser, port, test, handle, email
-      }))
-      .then(() => { finish() })
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+  await signup({ browser, port, handle, password, email })
+  await browser.navigateTo('http://localhost:' + port)
+  const login = await browser.$('#login')
+  await login.click()
+  const handleInput = await browser.$('#loginForm input[name="handle"]')
+  await handleInput.addValue(handle)
+  const passwordInput = await browser.$('#loginForm input[name="password"]')
+  await passwordInput.addValue(password)
+  const submitButton = await browser.$('#loginForm button[type="submit"]')
+  await submitButton.click()
+  await verifyLogIn({ browser, port, test, handle, email })
 })
 
-tape('sign in with bad credentials', test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#login'))
-      .then(a => a.click())
-      .then(() => browser.$('#loginForm input[name="handle"]'))
-      .then(input => input.addValue('invalid'))
-      .then(() => browser.$('#loginForm input[name="password"]'))
-      .then(input => input.addValue('invalid'))
-      .then(() => browser.$('#loginForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('p.error'))
-      .then(p => p.getText())
-      .then(text => {
-        test.assert(text.includes('invalid'), 'invalid')
-        finish()
-      })
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+interactive('sign in with bad credentials', async ({ browser, port, test }) => {
+  await browser.navigateTo('http://localhost:' + port)
+  const login = await browser.$('#login')
+  await login.click()
+  const handleInput = await browser.$('#loginForm input[name="handle"]')
+  await handleInput.addValue('invalid')
+  const passwordInput = await browser.$('#loginForm input[name="password"]')
+  await passwordInput.addValue('invalid')
+  const submitButton = await browser.$('#loginForm button[type="submit"]')
+  await submitButton.click()
+  const p = await browser.$('p.error')
+  const text = await p.getText()
+  test.assert(text.includes('invalid'), 'invalid')
 })
 
-tape('sign in with bad password', test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#login'))
-      .then(a => a.click())
-      .then(() => browser.$('#loginForm input[name="handle"]'))
-      .then(input => input.addValue('invalid'))
-      .then(() => browser.$('#loginForm input[name="password"]'))
-      .then(input => input.addValue('invalid'))
-      .then(() => browser.$('#loginForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('p.error'))
-      .then(p => p.getText())
-      .then(text => {
-        test.assert(text.includes('invalid'), 'invalid')
-        finish()
-      })
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
-})
-
-tape('lockout', test => {
+interactive('lockout', async ({ browser, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => new Promise((resolve, reject) => {
-        signup({
-          browser, port, handle, password, email
-        }, error => {
-          if (error) return reject(error)
-          resolve()
-        })
-      }))
-      .then(() => loginWithPassword('invalid', 'invalid handle or password'))
-      .then(() => loginWithPassword('invalid', 'invalid handle or password'))
-      .then(() => loginWithPassword('invalid', 'invalid handle or password'))
-      .then(() => loginWithPassword('invalid', 'invalid handle or password'))
-      .then(() => loginWithPassword('invalid', 'invalid handle or password'))
-      .then(() => loginWithPassword(password, 'account locked'))
-      .then(finish)
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-
-    function loginWithPassword (password, message) {
-      return browser.navigateTo('http://localhost:' + port)
-        .then(() => browser.$('#login'))
-        .then(a => a.click())
-        .then(() => browser.$('#loginForm input[name="handle"]'))
-        .then(input => input.addValue(handle))
-        .then(() => browser.$('#loginForm input[name="password"]'))
-        .then(input => input.addValue(password))
-        .then(() => browser.$('#loginForm button[type="submit"]'))
-        .then(submit => submit.click())
-        .then(() => browser.$('p.error'))
-        .then(p => p.getText())
-        .then(text => { test.equal(text, message, message) })
-    }
-
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+  await signup({ browser, port, handle, password, email })
+  await loginWithPassword('invalid', 'invalid handle or password')
+  await loginWithPassword('invalid', 'invalid handle or password')
+  await loginWithPassword('invalid', 'invalid handle or password')
+  await loginWithPassword('invalid', 'invalid handle or password')
+  await loginWithPassword('invalid', 'invalid handle or password')
+  await loginWithPassword(password, 'account locked')
+  async function loginWithPassword (password, message) {
+    await browser.navigateTo('http://localhost:' + port)
+    const login = await browser.$('#login')
+    await login.click()
+    const handleInput = await browser.$('#loginForm input[name="handle"]')
+    await handleInput.addValue(handle)
+    const passwordInput = await browser.$('#loginForm input[name="password"]')
+    await passwordInput.addValue(password)
+    const submitButton = await browser.$('#loginForm button[type="submit"]')
+    await submitButton.click()
+    const p = await browser.$('p.error')
+    const text = await p.getText()
+    test.equal(text, message, message)
+  }
 })

@@ -1,0 +1,26 @@
+import server from './server.js'
+import tap from 'tap'
+import webdriver from './webdriver.js'
+
+export default (label, logic) => {
+  tap.test(label, test => {
+    server((port, done) => {
+      test.teardown(done)
+      ;(async () => {
+        let browser
+        try {
+          browser = await webdriver()
+          await logic({ test, browser, port })
+        } catch (error) {
+          test.ifError(error)
+        } finally {
+          if (browser) {
+            browser.deleteSession().finally(() => test.end())
+          } else {
+            test.end()
+          }
+        }
+      })()
+    })
+  })
+}

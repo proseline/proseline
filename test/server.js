@@ -1,24 +1,25 @@
-const assert = require('assert')
-const crypto = require('../crypto')
-const csrf = require('../csrf')
-const fs = require('fs')
-const handle = require('../')
-const http = require('http')
-const os = require('os')
-const path = require('path')
-const pino = require('pino')
-const pinoHTTP = require('pino-http')
-const runSeries = require('run-series')
-const s3 = require('../s3')
-const simpleConcat = require('simple-concat')
-const spawn = require('child_process').spawn
+import assert from 'assert'
+import { generateKeyPair } from '../crypto.js'
+import { randomKey } from '../csrf.js'
+import checkEnvironment from '../check-environment.js'
+import fs from 'fs'
+import handle from '../index.js'
+import http from 'http'
+import os from 'os'
+import path from 'path'
+import pino from 'pino'
+import pinoHTTP from 'pino-http'
+import runSeries from 'run-series'
+import { clear } from '../s3.js'
+import simpleConcat from 'simple-concat'
+import { spawn } from 'child_process'
 
-module.exports = callback => {
+export default callback => {
   assert(typeof callback === 'function')
   const logger = pino({}, fs.createWriteStream('test-server.log'))
   const addLoggers = pinoHTTP({ logger })
-  process.env.CSRF_KEY = csrf.randomKey()
-  const keyPair = crypto.keyPair()
+  process.env.CSRF_KEY = randomKey()
+  const keyPair = generateKeyPair()
   process.env.PUBLIC_KEY = keyPair.publicKey
   process.env.SECRET_KEY = keyPair.secretKey
   let webServer
@@ -36,7 +37,7 @@ module.exports = callback => {
       const port = this.address().port
       process.env.BASE_HREF = 'http://localhost:' + port
       process.env.ADMIN_EMAIL = 'admin@example.com'
-      const missing = require('../check-environment')()
+      const missing = checkEnvironment()
       if (missing.length !== 0) {
         cleanup()
         missing.forEach(missing => {
@@ -89,6 +90,6 @@ module.exports = callback => {
   function cleanup () {
     if (webServer) webServer.close()
     if (stripeListen) stripeListen.kill()
-    s3.clear()
+    clear()
   }
 }

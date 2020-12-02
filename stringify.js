@@ -7,4 +7,6 @@
 // record by the cryptographic digest of its canonical string
 // representation.
 
-module.exports = require('fast-json-stable-stringify')
+import fastStableStringify from 'fast-json-stable-stringify'
+
+export default fastStableStringify

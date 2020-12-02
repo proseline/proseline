@@ -1,6 +1,6 @@
 // Ensure environment variables have been set.
 
-module.exports = () => {
+export default () => {
   const requiredEnvironmentVariables = [
     'NODE_ENV',
     'BASE_HREF',

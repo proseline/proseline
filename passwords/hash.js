@@ -1,8 +1,8 @@
 // Hash passwords for server-side storage.
 
-const scheme = require('./scheme')
+import scheme from './scheme.js'
 
-module.exports = (password, callback) => {
+export default (password, callback) => {
   const passwordBuffer = Buffer.from(password)
   scheme.hash(passwordBuffer, (error, hashBuffer) => {
     /* istanbul ignore if */

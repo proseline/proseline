@@ -1,13 +1,13 @@
 // Generate and verify tokens used to prevent cross-site
 // request forgery.
 
-const assert = require('assert')
-const expired = require('./expired')
-const html = require('./html')
-const sodium = require('sodium-native')
+import assert from 'assert'
+import { csrfToken as csrfTokenExpired } from './expired.js'
+import html from './html.js'
+import sodium from 'sodium-native'
 
 // Generate CSRF tokens.
-exports.generate = ({
+export const generate = ({
   action,
   sessionID,
   date = new Date().toISOString()
@@ -29,17 +29,17 @@ exports.generate = ({
   }
 }
 
-const tokenName = exports.tokenName = 'csrftoken'
-const nonceName = exports.nonceName = 'csrfnonce'
+export const tokenName = 'csrftoken'
+export const nonceName = 'csrfnonce'
 
-exports.names = [tokenName, nonceName]
+export const names = [tokenName, nonceName]
 
 // Generate hidden HTML form inputs.
-exports.inputs = ({ action, sessionID }) => {
+export const inputs = ({ action, sessionID }) => {
   assert(typeof action === 'string')
   assert(typeof sessionID === 'string')
 
-  const generated = exports.generate({ action, sessionID })
+  const generated = generate({ action, sessionID })
   return html`
     <input type=hidden name="${tokenName}" value="${generated.token}">
     <input type=hidden name="${nonceName}" value="${generated.nonce}">
@@ -47,7 +47,7 @@ exports.inputs = ({ action, sessionID }) => {
 }
 
 // Verify a CSRF token submitted with a form.
-exports.verify = ({ action, sessionID, token, nonce }, callback) => {
+export const verify = ({ action, sessionID, token, nonce }, callback) => {
   assert(typeof action === 'string')
   assert(typeof sessionID === 'string')
   assert(typeof token === 'string')
@@ -77,7 +77,7 @@ exports.verify = ({ action, sessionID, token, nonce }, callback) => {
     mismatchError.received = encryptedSessionID
     return callback(mismatchError)
   }
-  if (expired.csrfToken(date)) {
+  if (csrfTokenExpired(date)) {
     const expiredError = new Error('expired')
     expiredError.field = 'date'
     expiredError.date = date
@@ -89,7 +89,7 @@ exports.verify = ({ action, sessionID, token, nonce }, callback) => {
 // Return a random key for generating CSRF tokens. The
 // web application loads such a key from the CSRF_KEY
 // environment variable.
-exports.randomKey = () => {
+export const randomKey = () => {
   const key = sodium.sodium_malloc(sodium.crypto_secretbox_KEYBYTES)
   sodium.randombytes_buf(key)
   return key.toString('hex')

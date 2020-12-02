@@ -1,9 +1,9 @@
-const http = require('http')
-const mail = require('../mail').events
-const server = require('./server')
-const signup = require('./signup')
-const tape = require('tape')
-const webdriver = require('./webdriver')
+import events from '../test-events.js'
+import http from 'http'
+import interactive from './interactive.js'
+import server from './server.js'
+import signup from './signup.js'
+import tap from 'tap'
 
 const path = '/handle'
 
@@ -11,52 +11,38 @@ const handle = 'ana'
 const password = 'ana password'
 const email = 'ana@example.com'
 
-tape('GET ' + path, test => {
+tap.test('GET ' + path, test => {
   server((port, done) => {
+    test.teardown(done)
     http.request({ path, port })
       .once('response', response => {
         test.equal(response.statusCode, 200, '200')
         test.end()
-        done()
       })
       .end()
   })
 })
 
-tape('discover handle', test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => {
-        return new Promise((resolve, reject) => signup({
-          browser, port, handle, password, email
-        }, error => {
-          if (error) reject(error)
-          mail.once('sent', ({ to, text }) => {
-            test.equal(to, email, 'sent mail')
-            test.assert(text.includes(handle), 'mailed handle')
-            finish()
-          })
-          resolve()
-        }))
+interactive('discover handle', async ({ browser, port, test }) => {
+  await signup({ browser, port, handle, password, email })
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      events.once('sent', ({ to, text }) => {
+        test.equal(to, email, 'sent mail')
+        test.assert(text.includes(handle), 'mailed handle')
+        resolve()
       })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('#login'))
-      .then(a => a.click())
-      .then(() => browser.$('a=Forgot Handle'))
-      .then(a => a.click())
-      .then(() => browser.$('#handleForm input[name="email"]'))
-      .then(input => input.addValue(email))
-      .then(() => browser.$('#handleForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .catch(error => {
-        test.fail(error, 'catch')
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+    }),
+    (async () => {
+      await browser.navigateTo('http://localhost:' + port)
+      const login = await browser.$('#login')
+      await login.click()
+      const forgot = await browser.$('a=Forgot Handle')
+      await forgot.click()
+      const eMailInput = await browser.$('#handleForm input[name="email"]')
+      await eMailInput.addValue(email)
+      const submitButton = await browser.$('#handleForm button[type="submit"]')
+      await submitButton.click()
+    })()
+  ])
 })

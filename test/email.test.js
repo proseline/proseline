@@ -1,114 +1,64 @@
-const mail = require('../mail').events
-const server = require('./server')
-const login = require('./login')
-const signup = require('./signup')
-const tape = require('tape')
-const verifyLogIn = require('./verify-login')
-const webdriver = require('./webdriver')
+import events from '../test-events.js'
+import login from './login.js'
+import signup from './signup.js'
+import verifyLogIn from './verify-login.js'
+import interactive from './interactive.js'
 
-tape('change e-mail', test => {
+interactive('change e-mail', async ({ browser, port, test }) => {
   const handle = 'tester'
   const password = 'test password'
   const oldEMail = 'old@example.com'
   const newEMail = 'new@example.com'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      // Sign up.
-      .then(() => new Promise((resolve, reject) => {
-        signup({
-          browser, port, handle, password, email: oldEMail
-        }, error => {
-          if (error) return reject(error)
-          resolve()
-        })
-      }))
-      .then(() => login({
-        browser, port, handle, password
-      }))
-      .then(() => verifyLogIn({
-        browser, port, test, handle, email: oldEMail
-      }))
-      // Navigate to password-change page.
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Change E-Mail'))
-      .then(a => a.click())
-      // Submit password-change form.
-      .then(() => browser.$('#emailForm input[name="email"]'))
-      .then(input => input.addValue(newEMail))
-      .then(() => {
-        mail.once('sent', ({ to, subject, text }) => {
-          test.equal(to, newEMail, 'TO: new email')
-          test.assert(subject.includes('Confirm'), 'Confirm')
-          const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
-          browser.navigateTo(url)
-            .then(() => browser.$('p.message'))
-            .then(p => p.getText())
-            .then(text => {
-              test.assert(text.includes('changed'), 'changed')
-              test.end()
-              done()
-            })
-        })
+  // Sign up.
+  await signup({ browser, port, handle, password, email: oldEMail })
+  await login({ browser, port, handle, password })
+  await verifyLogIn({ browser, port, test, handle, email: oldEMail })
+  // Navigate to password-change page.
+  await browser.navigateTo('http://localhost:' + port)
+  const change = await browser.$('a=Change E-Mail')
+  await change.click()
+  // Submit password-change form.
+  const eMailInput = await browser.$('#emailForm input[name="email"]')
+  await eMailInput.addValue(newEMail)
+  let confirmURL
+  await Promise.all([
+    (async () => {
+      const submit = await browser.$('#emailForm button[type="submit"]')
+      await submit.click()
+    })(),
+    new Promise((resolve, reject) => {
+      events.once('sent', ({ to, subject, text }) => {
+        test.equal(to, newEMail, 'TO: new email')
+        test.assert(subject.includes('Confirm'), 'Confirm')
+        confirmURL = /<(http:\/\/[^ ]+)>/.exec(text)[1]
+        resolve()
       })
-      .then(() => browser.$('#emailForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .catch(error => {
-        test.fail(error, 'catch')
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+    })
+  ])
+  // Confirm.
+  await browser.navigateTo(confirmURL)
+  const p = await browser.$('p.message')
+  const text = await p.getText()
+  test.assert(text.includes('changed'), 'changed')
 })
 
-tape('change e-mail to existing', test => {
+interactive('change e-mail to existing', async ({ browser, port, test }) => {
   const handle = 'tester'
   const password = 'test password'
   const email = 'test@example.com'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => new Promise((resolve, reject) => {
-        signup({
-          browser, port, handle, password, email
-        }, error => {
-          if (error) return reject(error)
-          resolve()
-        })
-      }))
-      .then(() => login({
-        browser, port, handle, password
-      }))
-      .then(() => verifyLogIn({
-        browser, port, test, handle, email
-      }))
-      // Navigate to password-change page.
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Change E-Mail'))
-      .then(a => a.click())
-      // Submit password-change form.
-      .then(() => browser.$('#emailForm input[name="email"]'))
-      .then(input => input.setValue(email))
-      .then(() => browser.$('#emailForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('.error'))
-      .then(element => element.getText())
-      .then(text => {
-        test.assert(text.includes('already has'), 'already has')
-      })
-      .then(finish)
-      .catch(error => {
-        test.fail(error, 'catch')
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+  await signup({ browser, port, handle, password, email })
+  await login({ browser, port, handle, password })
+  await verifyLogIn({ browser, port, test, handle, email })
+  // Navigate to password-change page.
+  await browser.navigateTo('http://localhost:' + port)
+  const change = await browser.$('a=Change E-Mail')
+  await change.click()
+  // Submit password-change form.
+  const eMailInput = await browser.$('#emailForm input[name="email"]')
+  await eMailInput.setValue(email)
+  const submitButton = await browser.$('#emailForm button[type="submit"]')
+  await submitButton.click()
+  const p = await browser.$('.error')
+  const text = await p.getText()
+  test.assert(text.includes('already has'), 'already has')
 })

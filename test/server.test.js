@@ -1,15 +1,15 @@
-const crypto = require('../crypto')
-const csrf = require('../csrf')
-const fs = require('fs')
-const runSeries = require('run-series')
-const spawn = require('child_process').spawn
-const tape = require('tape')
+import { generateKeyPair } from '../crypto.js'
+import { randomKey } from '../csrf.js'
+import fs from 'fs'
+import runSeries from 'run-series'
+import { spawn } from 'child_process'
+import tap from 'tap'
 
-tape('server', test => {
+tap.test('server', test => {
   fs.mkdtemp('/tmp/', _ => {
     let server, curl
     const serverPort = 8080
-    const keyPair = crypto.keyPair()
+    const keyPair = generateKeyPair()
     runSeries([
       done => {
         server = spawn('node', ['server.js'], {
@@ -17,7 +17,7 @@ tape('server', test => {
             PORT: serverPort,
             NODE_ENV: 'test',
             BASE_HREF: 'http://localhost:' + serverPort + '/',
-            CSRF_KEY: csrf.randomKey(),
+            CSRF_KEY: randomKey(),
             PUBLIC_KEY: keyPair.publicKey,
             SECRET_KEY: keyPair.secretKey,
             STRIPE_PLAN: process.env.STRIPE_PLAN,

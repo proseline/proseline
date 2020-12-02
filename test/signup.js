@@ -1,33 +1,35 @@
-const assert = require('assert')
-const mail = require('../mail').events
+import addValue from './add-value.js'
+import assert from 'assert'
+import click from './click.js'
+import events from '../test-events.js'
+import timeout from './timeout.js'
 
-module.exports = ({ browser, port, handle, password, email }, callback) => {
+export default async ({ browser, port, handle, password, email }) => {
   assert(browser)
   assert(Number.isSafeInteger(port))
   assert(typeof handle === 'string')
   assert(typeof password === 'string')
   assert(typeof email === 'string')
-  browser.navigateTo('http://localhost:' + port)
-    .then(() => browser.$('a=Sign Up'))
-    .then(a => a.click())
-    .then(() => browser.$('#signupForm input[name="email"]'))
-    .then(input => input.addValue(email))
-    .then(() => browser.$('#signupForm input[name="handle"]'))
-    .then(input => input.addValue(handle))
-    .then(() => browser.$('#signupForm input[name="password"]'))
-    .then(input => input.addValue(password))
-    .then(() => browser.$('#signupForm input[name="repeat"]'))
-    .then(input => input.addValue(password))
-    .then(() => browser.$('#signupForm button[type="submit"]'))
-    .then(submit => submit.click())
-    .catch(callback)
-  mail.once('sent', ({ subject, text }) => {
-    if (!subject.includes('Confirm')) {
-      return callback(new Error('no confirmation e-mail'))
-    }
-    const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
-    browser.navigateTo(url)
-      .then(() => { callback() })
-      .catch(callback)
-  })
+  await browser.navigateTo('http://localhost:' + port)
+  await click(browser, 'a=Sign Up')
+  const signupForm = '#signupForm'
+  await addValue(browser, `${signupForm} input[name="email"]`, email)
+  await addValue(browser, `${signupForm} input[name="handle"]`, handle)
+  await addValue(browser, `${signupForm} input[name="password"]`, password)
+  await addValue(browser, `${signupForm} input[name="repeat"]`, password)
+  let confirmURL
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      events.once('sent', ({ subject, text }) => {
+        confirmURL = /<(http:\/\/[^ ]+)>/.exec(text)[1]
+        resolve()
+      })
+    }),
+    (async () => {
+      const submitButton = await browser.$(`${signupForm} button[type="submit"]`)
+      await submitButton.click()
+    })()
+  ])
+  await browser.navigateTo(confirmURL)
+  await timeout(1000)
 }

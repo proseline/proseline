@@ -1,30 +1,37 @@
 // Route and handle HTTP requests.
 
-const Busboy = require('busboy')
-const cookie = require('cookie')
-const crypto = require('./crypto')
-const csrf = require('./csrf')
-const displayDate = require('./display-date')
-const doNotCache = require('do-not-cache')
-const escapeHTML = require('escape-html')
-const hashPassword = require('./passwords/hash')
-const html = require('./html')
-const mail = require('./mail')
-const notify = require('./notify')
-const parseURL = require('url-parse')
-const path = require('path')
-const runAuto = require('run-auto')
-const runParallel = require('run-parallel')
-const runParallelLimit = require('run-parallel-limit')
-const runSeries = require('run-series')
-const send = require('send')
-const simpleConcatLimit = require('simple-concat-limit')
-const storage = require('./storage')
-const testEvents = require('./test-events')
-const uuid = require('uuid')
-const verifyPassword = require('./passwords/verify')
+import Busboy from 'busboy'
+import Stripe from 'stripe'
+import cookie from 'cookie'
+import {
+  envelop,
+  generateDiscoveryKey,
+  generateDistributionKey,
+  generateEncryptionKey,
+  generateKeyPair
+} from './crypto.js'
+import * as csrf from './csrf.js'
+import displayDate from './display-date.js'
+import doNotCache from 'do-not-cache'
+import escapeHTML from 'escape-html'
+import hashPassword from './passwords/hash.js'
+import html from './html.js'
+import mail from './mail.js'
+import * as notify from './notify.js'
+import parseURL from 'url-parse'
+import path from 'path'
+import runAuto from 'run-auto'
+import runParallel from 'run-parallel'
+import runParallelLimit from 'run-parallel-limit'
+import runSeries from 'run-series'
+import send from 'send'
+import simpleConcatLimit from 'simple-concat-limit'
+import * as storage from './storage.js'
+import testEvents from './test-events.js'
+import { v4 as uuid } from 'uuid'
+import verifyPassword from './passwords/verify.js'
 
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY)
+const stripe = Stripe(process.env.STRIPE_SECRET_KEY)
 
 const inProduction = process.env.NODE_ENV === 'production'
 
@@ -41,7 +48,7 @@ function route (path, handler) {
   }
 }
 
-module.exports = (request, response) => {
+export default (request, response) => {
   const parsed = request.parsed = parseURL(request.url, true)
   authenticate(request, response, () => {
     const pathname = parsed.pathname
@@ -244,11 +251,11 @@ function projectsList (account, projects) {
 }
 
 route('/styles.css', (request, response) => {
-  send(request, path.join(__dirname, 'styles.css')).pipe(response)
+  send(request, 'styles.css').pipe(response)
 })
 
 route('/logo.svg', (request, response) => {
-  send(request, path.join(__dirname, 'logo.svg')).pipe(response)
+  send(request, 'logo.svg').pipe(response)
 })
 
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
@@ -273,7 +280,7 @@ const handles = (() => {
 const passwords = (() => {
   const min = 8
   const max = 64
-  const pattern = exports.pattern = `^.{${min},${max}}$`
+  const pattern = `^.{${min},${max}}$`
   const re = new RegExp(pattern)
   return {
     pattern,
@@ -351,7 +358,7 @@ route('/signup', (request, response) => {
                 email,
                 passwordHash,
                 created: new Date().toISOString(),
-                keyPair: crypto.keyPair(),
+                keyPair: generateKeyPair(),
                 confirmed: false,
                 failures: 0,
                 locked: false
@@ -368,7 +375,7 @@ route('/signup', (request, response) => {
         })
       },
       done => {
-        const token = uuid.v4()
+        const token = uuid()
         storage.token.write(token, {
           action: 'confirm',
           created: new Date().toISOString(),
@@ -491,7 +498,7 @@ route('/login', (request, response) => {
     }
   }
 
-  module.exports = formRoute({
+  formRoute({
     action: '/login',
     form,
     fields,
@@ -577,7 +584,7 @@ route('/login', (request, response) => {
     }
 
     function createSession (done) {
-      sessionID = uuid.v4()
+      sessionID = uuid()
       storage.session.write(sessionID, {
         id: sessionID,
         handle,
@@ -809,7 +816,7 @@ route('/email', (request, response) => {
         hasAccountError.statusCode = 400
         return done(hasAccountError)
       }
-      const token = uuid.v4()
+      const token = uuid()
       storage.token.write(token, {
         action: 'email',
         created: new Date().toISOString(),
@@ -1180,7 +1187,7 @@ route('/reset', (request, response) => {
         invalidError.statusCode = 400
         return done(invalidError)
       }
-      const token = uuid.v4()
+      const token = uuid()
       storage.token.write(token, {
         action: 'reset',
         created: new Date().toISOString(),
@@ -1565,12 +1572,12 @@ route('/projects', (request, response) => {
     const handle = request.account.handle
     const created = new Date().toISOString()
     // Generate project keys.
-    const distributionKey = crypto.distributionKey()
-    const discoveryKey = crypto.discoveryKey(distributionKey)
-    const projectKeyPair = crypto.keyPair()
-    const encryptionKey = crypto.encryptionKey()
+    const distributionKey = generateDistributionKey()
+    const discoveryKey = generateDiscoveryKey(distributionKey)
+    const projectKeyPair = generateKeyPair()
+    const encryptionKey = generateEncryptionKey()
     // Generate journal keys.
-    const journalKeyPair = crypto.keyPair()
+    const journalKeyPair = generateKeyPair()
 
     runParallel([
       storeProjectKeys,
@@ -1630,7 +1637,7 @@ route('/projects', (request, response) => {
       }
       let envelope
       try {
-        envelope = crypto.envelope({
+        envelope = envelop({
           journalKeyPair,
           projectKeyPair,
           encryptionKey,
@@ -1834,7 +1841,7 @@ route('/logo-500.png', servePNG)
 route('/logo-1000.png', servePNG)
 
 function servePNG (request, response) {
-  send(request, path.join(__dirname, request.parsed.pathname)).pipe(response)
+  send(request, request.parsed.pathname).pipe(response)
 }
 
 route('/tagline', (request, response) => {
@@ -2191,7 +2198,7 @@ function authenticate (request, response, handler) {
   }
 
   function createGuestSession () {
-    const id = uuid.v4()
+    const id = uuid()
     const expires = new Date(
       Date.now() + (30 * 24 * 60 * 60 * 1000)
     )

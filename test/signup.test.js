@@ -1,216 +1,142 @@
-const http = require('http')
-const mail = require('../mail').events
-const server = require('./server')
-const signup = require('util').promisify(require('./signup'))
-const tape = require('tape')
-const verifyLogIn = require('./verify-login')
-const webdriver = require('./webdriver')
+import events from '../test-events.js'
+import http from 'http'
+import interactive from './interactive.js'
+import login from './login.js'
+import server from './server.js'
+import signup from './signup.js'
+import tap from 'tap'
+import verifyLogIn from './verify-login.js'
 
 const path = '/signup'
 
-tape('GET ' + path, test => {
+tap.test('GET ' + path, test => {
   server((port, done) => {
+    test.teardown(done)
     http.request({ path, port })
       .once('response', response => {
         test.equal(response.statusCode, 200, '200')
         test.end()
-        done()
       })
       .end()
   })
 })
 
-tape('browse ' + path, test => {
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Sign Up'))
-      .then(a => a.click())
-      .then(() => browser.$('h2'))
-      .then(title => title.getText())
-      .then(text => {
-        test.equal(text, 'Sign Up', '<h2>Sign Up</h2>')
-        finish()
-      })
-      .catch(error => {
-        test.fail(error)
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+interactive('browse ' + path, async ({ browser, port, test }) => {
+  await browser.navigateTo('http://localhost:' + port)
+  const signUp = await browser.$('a=Sign Up')
+  await signUp.click()
+  const h2 = await browser.$('h2')
+  const text = await h2.getText()
+  test.equal(text, 'Sign Up', '<h2>Sign Up</h2>')
 })
 
-tape('sign up', test => {
+interactive('sign up', async ({ browser, port, test }) => {
   const email = 'test@example.com'
   const handle = 'tester'
   const password = 'test password'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Sign Up'))
-      .then(a => a.click())
-      .then(() => browser.$('#signupForm input[name="email"]'))
-      .then(input => input.addValue(email))
-      .then(() => browser.$('#signupForm input[name="handle"]'))
-      .then(input => input.addValue(handle))
-      .then(() => browser.$('#signupForm input[name="password"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm input[name="repeat"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .catch(error => {
-        test.fail(error, 'catch')
-        test.end()
-        done()
+  await browser.navigateTo('http://localhost:' + port)
+  const signUp = await browser.$('a=Sign Up')
+  await signUp.click()
+  const signupForm = '#signupForm'
+  const eMailInput = await browser.$(`${signupForm} input[name="email"]`)
+  await eMailInput.addValue(email)
+  const handleInput = await browser.$(`${signupForm} input[name="handle"]`)
+  await handleInput.addValue(handle)
+  const passwordInput = await browser.$(`${signupForm} input[name="password"]`)
+  await passwordInput.addValue(password)
+  const repeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
+  await repeatInput.addValue(password)
+  let url
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      events.once('sent', ({ to, subject, text }) => {
+        test.equal(to, email, 'sends e-mail')
+        test.assert(subject.includes('Confirm'), 'subject')
+        test.assert(text.includes('/confirm?token='), 'link')
+        url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
+        resolve()
       })
-    mail.once('sent', ({ to, subject, text }) => {
-      test.equal(to, email, 'sends e-mail')
-      test.assert(subject.includes('Confirm'), 'subject')
-      test.assert(text.includes('/confirm?token='), 'link')
-      const url = /<(http:\/\/[^ ]+)>/.exec(text)[1]
-      browser.navigateTo(url)
-        .then(() => browser.$('a=Log In'))
-        .then(a => a.click())
-        .then(() => browser.$('#loginForm input[name="handle"]'))
-        .then(input => input.addValue(handle))
-        .then(() => browser.$('#loginForm input[name="password"]'))
-        .then(input => input.addValue(password))
-        .then(() => browser.$('#loginForm button[type="submit"]'))
-        .then(submit => submit.click())
-        .then(() => verifyLogIn({
-          browser, port, test, handle, email
-        }))
-        .then(() => finish())
-        .catch(error => {
-          test.fail(error)
-          finish()
-        })
-      mail.once('sent', ({ subject, text }) => {
-        test.equal(subject, 'Sign Up', 'admin notification')
-        test.assert(text.includes(handle), 'includes handle')
-        test.assert(text.includes(email), 'includes email')
-      })
-    })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+    }),
+    (async () => {
+      const submitButton = await browser.$('#signupForm button[type="submit"]')
+      await submitButton.click()
+    })()
+  ])
+  await browser.navigateTo(url)
+  await login({ browser, port, handle, password })
+  await verifyLogIn({ browser, port, test, handle, email })
 })
 
-tape('sign up same handle', test => {
+interactive('sign up same handle', async ({ browser, port, test }) => {
   const firstEMail = 'first@example.com'
   const secondEMail = 'first@example.com'
   const handle = 'tester'
   const password = 'test password'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      // Sign up using the handle.
-      .then(() => {
-        return new Promise((resolve, reject) => signup({
-          browser, port, handle, password, email: firstEMail
-        }, error => {
-          if (error) reject(error)
-          resolve()
-        }))
-      })
-      // Try to sign up again with the same handle.
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Sign Up'))
-      .then(a => a.click())
-      .then(() => browser.$('#signupForm input[name="email"]'))
-      .then(input => input.addValue(secondEMail))
-      .then(() => browser.$('#signupForm input[name="handle"]'))
-      .then(input => input.addValue(handle))
-      .then(() => browser.$('#signupForm input[name="password"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm input[name="repeat"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('.error'))
-      .then(element => element.getText())
-      .then(text => {
-        test.assert(text.includes('taken'), 'handle taken')
-      })
-      .then(() => browser.$('input[name="email"]'))
-      .then(input => input.getValue())
-      .then(value => test.equal(value, secondEMail, 'preserves e-mail value'))
-      .then(() => browser.$('input[name="handle"]'))
-      .then(input => input.getValue())
-      .then(value => test.equal(value, handle, 'preserves handle value'))
-      .then(() => browser.$('input[name="password"]'))
-      .then(input => input.getValue())
-      .then(value => test.equal(value, '', 'empties password'))
-      .then(() => browser.$('input[name="repeat"]'))
-      .then(input => input.getValue())
-      .then(value => test.equal(value, '', 'empties password repeat'))
-      .then(finish)
-      .catch(error => {
-        test.fail(error, 'catch')
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+
+  // Sign up using the handle.
+  await signup({ browser, port, handle, password, email: firstEMail })
+
+  // Try to sign up again with the same handle.
+  const signUp = await browser.$('a=Sign Up')
+  await signUp.click()
+  const signupForm = '#signupForm'
+  const eMailInput = await browser.$(`${signupForm} input[name="email"]`)
+  await eMailInput.addValue(secondEMail)
+  const handleInput = await browser.$(`${signupForm} input[name="handle"]`)
+  await handleInput.addValue(handle)
+  const passwordInput = await browser.$(`${signupForm} input[name="password"]`)
+  await passwordInput.addValue(password)
+  const repeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
+  await repeatInput.addValue(password)
+  const submitButton = await browser.$(`${signupForm} button[type="submit"]`)
+  await submitButton.click()
+  test.assert(true, 'signed up again with same handle')
+
+  // Check for error.
+  const error = await browser.$('.error')
+  const text = await error.getText()
+  test.assert(text.includes('taken'), 'handle taken')
+
+  // Check that other form inputs remain filled.
+  const newEMailInput = await browser.$(`${signupForm} input[name="email"]`)
+  const eMailValue = await newEMailInput.getValue()
+  test.equal(eMailValue, secondEMail, 'preserves e-mail value')
+  const newHandleInput = await browser.$(`${signupForm} input[name="handle"]`)
+  const handleValue = await newHandleInput.getValue()
+  test.equal(handleValue, handle, 'preserves handle value')
+  const newPasswordInput = await browser.$(`${signupForm} input[name="password"]`)
+  const passwordValue = await newPasswordInput.getValue()
+  test.equal(passwordValue, '', 'empties password')
+  const newRepeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
+  const repeatValue = await newRepeatInput.getValue()
+  test.equal(repeatValue, '', 'empties password repeat')
 })
 
-tape('sign up same email', test => {
+interactive('sign up same email', async ({ browser, port, test }) => {
   const email = 'first@example.com'
   const firstHandle = 'first'
   const secondHandle = 'second'
   const password = 'test password'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => {
-        return new Promise((resolve, reject) => signup({
-          browser, port, handle: firstHandle, password, email
-        }, error => {
-          if (error) reject(error)
-          resolve()
-        }))
-      })
-      // Try to sign up again with the same e-mail.
-      .then(() => browser.navigateTo('http://localhost:' + port))
-      .then(() => browser.$('a=Sign Up'))
-      .then(a => a.click())
-      .then(() => browser.$('#signupForm input[name="email"]'))
-      .then(input => input.addValue(email))
-      .then(() => browser.$('#signupForm input[name="handle"]'))
-      .then(input => input.addValue(secondHandle))
-      .then(() => browser.$('#signupForm input[name="password"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm input[name="repeat"]'))
-      .then(input => input.addValue(password))
-      .then(() => browser.$('#signupForm button[type="submit"]'))
-      .then(submit => submit.click())
-      .then(() => browser.$('.error'))
-      .then(element => element.getText())
-      .then(text => {
-        test.assert(text.includes('e-mail'), 'e-mail')
-      })
-      .then(finish)
-      .catch(error => {
-        test.fail(error, 'catch')
-        finish()
-      })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+
+  await signup({ browser, port, handle: firstHandle, password, email })
+
+  // Try to sign up again with the same e-mail.
+  await browser.navigateTo('http://localhost:' + port)
+  const signUp = await browser.$('a=Sign Up')
+  await signUp.click()
+  const eMailInput = await browser.$('#signupForm input[name="email"]')
+  await eMailInput.addValue(email)
+  const handleInput = await browser.$('#signupForm input[name="handle"]')
+  await handleInput.addValue(secondHandle)
+  const passwordInput = await browser.$('#signupForm input[name="password"]')
+  await passwordInput.addValue(password)
+  const repeatInput = await browser.$('#signupForm input[name="repeat"]')
+  await repeatInput.addValue(password)
+  const submitButton = await browser.$('#signupForm button[type="submit"]')
+  await submitButton.click()
+
+  // Check for error.
+  const error = await browser.$('.error')
+  const text = await error.getText()
+  test.assert(text.includes('e-mail'), 'e-mail')
 })

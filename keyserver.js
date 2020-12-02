@@ -2,11 +2,11 @@
 //
 // See keyserver.svg for a diagram.
 
-const assert = require('assert')
-const sodium = require('sodium-universal')
+import assert from 'assert'
+import sodium from 'sodium-universal'
 
 // Configure a protocol implementation with sodium primitives.
-module.exports = protocol({
+export default protocol({
   clientStretch: ({ password, salt }) => {
     const returned = Buffer.alloc(32)
     sodium.crypto_pwhash(

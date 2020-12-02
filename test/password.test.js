@@ -1,86 +1,61 @@
-const mail = require('../mail').events
-const server = require('./server')
-const signup = require('./signup')
-const tape = require('tape')
-const verifyLogIn = require('./verify-login')
-const webdriver = require('./webdriver')
+import events from '../test-events.js'
+import interactive from './interactive.js'
+import logout from './logout.js'
+import signup from './signup.js'
+import verifyLogIn from './verify-login.js'
 
-tape('change password', test => {
+interactive('change password', async ({ browser, port, test }) => {
   const handle = 'tester'
   const oldPassword = 'old password'
   const newPassword = 'new password'
   const email = 'tester@example.com'
-  server((port, done) => {
-    let browser
-    webdriver()
-      .then(loaded => { browser = loaded })
-      .then(() => {
-        signup({
-          browser, port, handle, password: oldPassword, email
-        }, error => {
-          test.ifError(error, 'no signup error')
-          browser.navigateTo('http://localhost:' + port)
-            // Navigate to log-in page.
-            .then(() => browser.$('#login'))
-            .then(a => a.click())
-            // Sign in.
-            .then(() => browser.$('#loginForm input[name="handle"]'))
-            .then(input => input.addValue(handle))
-            .then(() => browser.$('#loginForm input[name="password"]'))
-            .then(input => input.addValue(oldPassword))
-            .then(() => browser.$('#loginForm button[type="submit"]'))
-            .then(submit => submit.click())
-            // Navigate to password-change page.
-            .then(() => browser.$('a=Change Password'))
-            .then(a => a.click())
-            // Submit password-change form.
-            .then(() => browser.$('#passwordForm input[name="old"]'))
-            .then(input => input.addValue(oldPassword))
-            .then(() => browser.$('#passwordForm input[name="password"]'))
-            .then(input => input.addValue(newPassword))
-            .then(() => browser.$('#passwordForm input[name="repeat"]'))
-            .then(input => input.addValue(newPassword))
-            .then(() => {
-              mail.once('sent', ({ to, subject }) => {
-                test.equal(to, email, 'email')
-                test.assert(subject.includes('Password'), 'Password')
-              })
-            })
-            .then(() => browser.$('#passwordForm button[type="submit"]'))
-            .then(submit => submit.click())
-            .then(() => browser.$('p.message'))
-            .then(p => p.getText())
-            .then(text => {
-              test.assert(text.includes('changed'), 'changed')
-            })
-            // Sign out.
-            .then(() => browser.$('#logout'))
-            .then(a => a.click())
-            .then(() => browser.$('#login'))
-            .then(a => a.click())
-            // Sign in with new password.
-            .then(() => browser.$('#loginForm input[name="handle"]'))
-            .then(input => input.addValue(handle))
-            .then(() => browser.$('#loginForm input[name="password"]'))
-            .then(input => input.addValue(newPassword))
-            .then(() => browser.$('#loginForm button[type="submit"]'))
-            .then(submit => submit.click())
-            .then(() => verifyLogIn({
-              browser, test, port, handle, email
-            }))
-            .then(() => {
-              test.end()
-              done()
-            })
-            .catch(error => {
-              test.fail(error, 'catch')
-              finish()
-            })
-        })
+  // Sign up with old password.
+  await signup({ browser, port, handle, password: oldPassword, email })
+  // Log in with old password.
+  await login({ handle, password: oldPassword })
+  // Navigate to password-change form.
+  const change = await browser.$('a=Change Password')
+  await change.click()
+  // Submit password-change form.
+  const passwordForm = '#passwordForm'
+  const changeOldInput = await browser.$(`${passwordForm} input[name="old"]`)
+  await changeOldInput.addValue(oldPassword)
+  const changePasswordInput = await browser.$(`${passwordForm} input[name="password"]`)
+  await changePasswordInput.addValue(newPassword)
+  const changeRepeat = await browser.$(`${passwordForm} input[name="repeat"]`)
+  await changeRepeat.addValue(newPassword)
+  await Promise.all([
+    new Promise((resolve, reject) => {
+      events.once('sent', ({ to, subject }) => {
+        test.equal(to, email, 'email')
+        test.assert(subject.includes('Password'), 'Password')
+        resolve()
       })
-    function finish () {
-      test.end()
-      done()
-    }
-  })
+    }),
+    (async () => {
+      const changeSubmitButton = await browser.$(`${passwordForm} button[type="submit"]`)
+      await changeSubmitButton.click()
+    })()
+  ])
+  const message = await browser.$('p.message')
+  const text = await message.getText()
+  test.assert(text.includes('changed'), 'changed')
+  // Log out.
+  await logout({ browser, port })
+  // Log in with new password.
+  await login({ handle, password: newPassword })
+  await verifyLogIn({ browser, test, port, handle, email })
+
+  async function login ({ handle, password }) {
+    await browser.navigateTo('http://localhost:' + port)
+    const login = await browser.$('#login')
+    await login.click()
+    const loginForm = '#loginForm'
+    const handleInput = await browser.$(`${loginForm} input[name="handle"]`)
+    await handleInput.addValue(handle)
+    const passwordInput = await browser.$(`${loginForm} input[name="password"]`)
+    await passwordInput.addValue(password)
+    const submitButton = await browser.$(`${loginForm} button[type="submit"]`)
+    await submitButton.click()
+  }
 })
