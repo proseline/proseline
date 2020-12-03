@@ -1,6 +1,6 @@
 import server from './server.js'
 import tap from 'tap'
-import webdriver from './webdriver.js'
+import webdriver from 'webdriverio'
 
 export default (label, logic) => {
   tap.test(label, test => {
@@ -9,7 +9,11 @@ export default (label, logic) => {
       ;(async () => {
         let browser
         try {
-          browser = await webdriver()
+          browser = await webdriver.remote({
+            logLevel: 'error',
+            path: '/',
+            capabilities: { browserName: 'firefox' }
+          })
           await logic({ test, browser, port })
         } catch (error) {
           test.ifError(error)
