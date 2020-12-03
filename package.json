@@ -44,6 +44,13 @@
     "tap": "^14.11.0",
     "webdriverio": "^6.10.2"
   },
+  "tap": {
+    "before": "test/run-geckodriver.js",
+    "after": "test/kill-geckodriver.js",
+    "no-esm": true,
+    "no-timeout": true,
+    "reporter": "tap"
+  },
   "scripts": {
     "precommit": "npm run lint",
     "coverage": "nyc --reporter=lcov --reporter=text npm run test",
@@ -52,6 +59,6 @@
     "licenses": "licensee --errors-only",
     "lint": "standard",
     "start": "./start",
-    "test": "NODE_ENV=test tap --before test/before.js --after test/after.js --no-timeout --no-esm --reporter=tap test/*.test.js"
+    "test": "NODE_ENV=test tap test/*.test.js"
   }
 }
