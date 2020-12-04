@@ -1841,7 +1841,7 @@ route('/logo-500.png', servePNG)
 route('/logo-1000.png', servePNG)
 
 function servePNG (request, response) {
-  send(request, request.parsed.pathname).pipe(response)
+  send(request, path.basename(request.parsed.pathname)).pipe(response)
 }
 
 route('/tagline', (request, response) => {
