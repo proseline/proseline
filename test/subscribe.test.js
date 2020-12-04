@@ -4,36 +4,28 @@ import subscribe from './subscribe.js'
 import interactive from './interactive.js'
 import verifyLogIn from './verify-login.js'
 
-interactive('subscribe and unsubscribe', async ({ browser, port, test }) => {
+interactive('subscribe and unsubscribe', async ({ page, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
 
-  await signup({ browser, port, handle, password, email })
-  await login({ browser, port, handle, password })
-  await verifyLogIn({ browser, port, test, handle, email })
-  await subscribe({ browser, port, test })
+  await signup({ page, port, handle, password, email })
+  await login({ page, port, handle, password })
+  await verifyLogIn({ page, port, test, handle, email })
+  await subscribe({ page, port, test })
 
   // Unsubscribe.
-  await browser.navigateTo('http://localhost:' + port)
-  const subscription = await browser.$('#subscription')
-  await subscription.click()
+  await page.goto('http://localhost:' + port)
+  await page.click('#subscription')
 
   // Confirm.
-  const cancel = await browser.$('=Cancel plan')
-  await cancel.click()
+  await page.click('text="Cancel plan"')
+  await page.click('button[data-test="confirm"]')
 
-  const confirm = await browser.$('button[data-test="confirm"]')
-  await confirm.click()
+  await page.waitForSelector('text="No current plans."')
+  test.pass('canceled plan')
 
-  const noPlan = await browser.$('span=No current plans.')
-  await noPlan.waitForExist({ timeout: 10000 })
-  const canceled = await noPlan.isExisting()
-  test.assert(canceled, 'canceled plan')
-
-  await browser.navigateTo('http://localhost:' + port)
-  const subscribeAgain = await browser.$('#subscribe')
-  await subscribeAgain.waitForExist({ timeout: 10000 })
-  const notSubscribed = await subscribeAgain.isExisting()
-  test.assert(notSubscribed, 'no longer subscribed')
+  await page.goto('http://localhost:' + port)
+  await page.waitForSelector('#subscribe')
+  test.pass('no longer subscribed')
 })

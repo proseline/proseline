@@ -19,70 +19,55 @@ tap.test('GET ' + path, test => {
   })
 })
 
-interactive('browse ' + path, async ({ browser, port, test }) => {
-  await browser.navigateTo('http://localhost:' + port)
-  const login = await browser.$('#login')
-  await login.click()
-  const h2 = await browser.$('h2')
-  const text = await h2.getText()
+interactive('browse ' + path, async ({ page, port, test }) => {
+  await page.goto('http://localhost:' + port)
+  await page.click('#login')
+  const text = await page.textContent('h2')
   test.equal(text, 'Log In', '<h2>Log In</h2>')
 })
 
-interactive('sign in', async ({ browser, port, test }) => {
+interactive('sign in', async ({ page, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  await signup({ browser, port, handle, password, email })
-  await browser.navigateTo('http://localhost:' + port)
-  const login = await browser.$('#login')
-  await login.click()
-  const handleInput = await browser.$('#loginForm input[name="handle"]')
-  await handleInput.addValue(handle)
-  const passwordInput = await browser.$('#loginForm input[name="password"]')
-  await passwordInput.addValue(password)
-  const submitButton = await browser.$('#loginForm button[type="submit"]')
-  await submitButton.click()
-  await verifyLogIn({ browser, port, test, handle, email })
+  await signup({ page, port, handle, password, email })
+  await page.goto('http://localhost:' + port)
+  await page.click('#login')
+  await page.fill('#loginForm input[name="handle"]', handle)
+  await page.fill('#loginForm input[name="password"]', password)
+  await page.click('#loginForm button[type="submit"]')
+  await verifyLogIn({ page, port, test, handle, email })
 })
 
-interactive('sign in with bad credentials', async ({ browser, port, test }) => {
-  await browser.navigateTo('http://localhost:' + port)
-  const login = await browser.$('#login')
-  await login.click()
-  const handleInput = await browser.$('#loginForm input[name="handle"]')
-  await handleInput.addValue('invalid')
-  const passwordInput = await browser.$('#loginForm input[name="password"]')
-  await passwordInput.addValue('invalid')
-  const submitButton = await browser.$('#loginForm button[type="submit"]')
-  await submitButton.click()
-  const p = await browser.$('p.error')
-  const text = await p.getText()
+interactive('sign in with bad credentials', async ({ page, port, test }) => {
+  await page.goto('http://localhost:' + port)
+  await page.click('#login')
+  await page.fill('#loginForm input[name="handle"]', 'invalid')
+  await page.fill('#loginForm input[name="password"]', 'invalid')
+  await page.click('#loginForm button[type="submit"]')
+  const text = await page.textContent('p.error')
   test.assert(text.includes('invalid'), 'invalid')
 })
 
-interactive('lockout', async ({ browser, port, test }) => {
+interactive('lockout', async ({ page, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  await signup({ browser, port, handle, password, email })
+  await signup({ page, port, handle, password, email })
   await loginWithPassword('invalid', 'invalid handle or password')
   await loginWithPassword('invalid', 'invalid handle or password')
   await loginWithPassword('invalid', 'invalid handle or password')
   await loginWithPassword('invalid', 'invalid handle or password')
   await loginWithPassword('invalid', 'invalid handle or password')
   await loginWithPassword(password, 'account locked')
+
   async function loginWithPassword (password, message) {
-    await browser.navigateTo('http://localhost:' + port)
-    const login = await browser.$('#login')
-    await login.click()
-    const handleInput = await browser.$('#loginForm input[name="handle"]')
-    await handleInput.addValue(handle)
-    const passwordInput = await browser.$('#loginForm input[name="password"]')
-    await passwordInput.addValue(password)
-    const submitButton = await browser.$('#loginForm button[type="submit"]')
-    await submitButton.click()
-    const p = await browser.$('p.error')
-    const text = await p.getText()
+    await page.goto('http://localhost:' + port)
+    await page.click('#login')
+    await page.fill('#loginForm input[name="handle"]', handle)
+    await page.fill('#loginForm input[name="password"]', password)
+    await page.click('#loginForm button[type="submit"]')
+    const text = await page.textContent('p.error')
     test.equal(text, message, message)
   }
 })

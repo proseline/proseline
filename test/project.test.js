@@ -4,36 +4,28 @@ import subscribe from './subscribe.js'
 import verifyLogIn from './verify-login.js'
 import interactive from './interactive.js'
 
-interactive('create project', async ({ browser, port, test }) => {
+interactive('create project', async ({ page, port, test }) => {
   const handle = 'ana'
   const password = 'test password'
   const email = 'ana@example.com'
-  await signup({ browser, port, handle, password, email })
-  await login({ browser, port, handle, password })
-  await verifyLogIn({ browser, port, test, handle, email })
-  await subscribe({ browser, port, test })
+  await signup({ page, port, handle, password, email })
+  await login({ page, port, handle, password })
+  await verifyLogIn({ page, port, test, handle, email })
+  await subscribe({ page, port, test })
 
   // Create Project
-  await browser.navigateTo('http://localhost:' + port)
-  const project = await browser.$('#project')
-  await project.waitForExist({ timeout: 20000 })
-  await project.click()
+  await page.goto('http://localhost:' + port)
+  await page.click('#project')
 
   const projectTitle = 'Test Project'
-  const title = await browser.$('#projectForm input[name=title]')
-  await title.waitForExist({ timeout: 20000 })
-  await title.setValue(projectTitle)
+  await page.fill('#projectForm input[name=title]', projectTitle)
+  await page.click('#projectForm button[type=submit]')
 
-  const submitProject = await browser.$('#projectForm button[type=submit]')
-  await submitProject.click()
-
-  const h2 = await browser.$('h2=Test Project')
-  await h2.waitForExist()
+  await page.waitForSelector(`text="${projectTitle}"`)
   test.pass('project page')
 
   // Navigate back to homepage.
-  await browser.navigateTo('http://localhost:' + port)
-  const projectLink = await browser.$(`a=${projectTitle}`)
-  await projectLink.waitForExist()
+  await page.goto('http://localhost:' + port)
+  await page.waitForSelector(`text="${projectTitle}"`)
   test.pass('project link on homepage')
 })

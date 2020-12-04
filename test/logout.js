@@ -1,5 +1,4 @@
-export default async ({ browser, port }) => {
-  await browser.navigateTo('http://localhost:' + port + '/')
-  const logout = await browser.$('#logout')
-  await logout.click()
+export default async ({ page, port }) => {
+  await page.goto('http://localhost:' + port + '/')
+  await page.click('#logout')
 }

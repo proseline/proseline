@@ -125,7 +125,6 @@ function server (callback) {
     callback(port, cleanup)
   })
   function cleanup () {
-    console.log('closing')
     server.close()
   }
 }

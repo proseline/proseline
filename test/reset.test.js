@@ -21,19 +21,16 @@ tap.test('GET ' + path, test => {
   })
 })
 
-interactive('reset password', async ({ browser, port, test }) => {
+interactive('reset password', async ({ page, port, test }) => {
   const handle = 'tester'
   const password = 'test password'
   const email = 'tester@example.com'
-  await signup({ browser, port, handle, password, email })
-  await browser.navigateTo('http://localhost:' + port)
-  const loginLink = await browser.$('#login')
-  await loginLink.click()
-  const reset = await browser.$('a=Reset Password')
-  await reset.click()
+  await signup({ page, port, handle, password, email })
+  await page.goto('http://localhost:' + port)
+  await page.click('#login')
+  await page.click('text="Reset Password"')
   const resetForm = '#resetForm'
-  const handleInput = await browser.$(`${resetForm} input[name="handle"]`)
-  await handleInput.addValue(handle)
+  await page.fill(`${resetForm} input[name="handle"]`, handle)
   let url
   await Promise.all([
     new Promise((resolve, reject) => {
@@ -44,21 +41,15 @@ interactive('reset password', async ({ browser, port, test }) => {
         resolve()
       })
     }),
-    (async () => {
-      const submit = await browser.$(`${resetForm} button[type="submit"]`)
-      await submit.click()
-    })()
+    page.click(`${resetForm} button[type="submit"]`)
   ])
-  await browser.navigateTo(url)
+  await page.goto(url)
   // Fill reset form.
   const passwordForm = '#passwordForm'
-  const passwordInput = await browser.$(`${passwordForm} input[name="password"]`)
-  await passwordInput.addValue(password)
-  const repeatInput = await browser.$(`${passwordForm} input[name="repeat"]`)
-  await repeatInput.addValue(password)
-  const submitButton = await browser.$(`${passwordForm} button[type="submit"]`)
-  await submitButton.click()
+  await page.fill(`${passwordForm} input[name="password"]`, password)
+  await page.fill(`${passwordForm} input[name="repeat"]`, password)
+  await page.click(`${passwordForm} button[type="submit"]`)
   // Log in with new password.
-  await login({ browser, port, handle, password })
-  await verifyLogIn({ browser, port, test, handle, email })
+  await login({ page, port, handle, password })
+  await verifyLogIn({ page, port, test, handle, email })
 })

@@ -1,16 +1,14 @@
 import assert from 'assert'
 
-export default async ({ browser, test, port, handle, email }) => {
-  assert(browser)
+export default async ({ page, test, port, handle, email }) => {
+  assert(page)
   assert(test)
   assert(Number.isSafeInteger(port))
   assert(typeof handle === 'string')
   assert(typeof email === 'string')
-  await browser.navigateTo('http://localhost:' + port)
-  const handleElement = await browser.$('.handle')
-  const handleText = await handleElement.getText()
+  await page.goto('http://localhost:' + port)
+  const handleText = await page.textContent('.handle')
   test.equal(handleText, handle, '/account shows handle')
-  const eMailElement = await browser.$('.email')
-  const eMailText = await eMailElement.getText()
+  const eMailText = await page.textContent('.email')
   test.equal(eMailText, email, '/account shows e-mail')
 }

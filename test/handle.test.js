@@ -23,8 +23,8 @@ tap.test('GET ' + path, test => {
   })
 })
 
-interactive('discover handle', async ({ browser, port, test }) => {
-  await signup({ browser, port, handle, password, email })
+interactive('discover handle', async ({ page, port, test }) => {
+  await signup({ page, port, handle, password, email })
   await Promise.all([
     new Promise((resolve, reject) => {
       events.once('sent', ({ to, text }) => {
@@ -34,15 +34,11 @@ interactive('discover handle', async ({ browser, port, test }) => {
       })
     }),
     (async () => {
-      await browser.navigateTo('http://localhost:' + port)
-      const login = await browser.$('#login')
-      await login.click()
-      const forgot = await browser.$('a=Forgot Handle')
-      await forgot.click()
-      const eMailInput = await browser.$('#handleForm input[name="email"]')
-      await eMailInput.addValue(email)
-      const submitButton = await browser.$('#handleForm button[type="submit"]')
-      await submitButton.click()
+      await page.goto('http://localhost:' + port)
+      await page.click('#login')
+      await page.click('text="Forgot Handle"')
+      await page.fill('#handleForm input[name="email"]', email)
+      await page.click('#handleForm button[type="submit"]')
     })()
   ])
 })

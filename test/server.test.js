@@ -1,4 +1,6 @@
 import { generateKeyPair } from '../crypto.js'
+import simpleConcat from 'simple-concat'
+import http from 'http'
 import { randomKey } from '../csrf.js'
 import fs from 'fs'
 import runSeries from 'run-series'
@@ -7,7 +9,7 @@ import tap from 'tap'
 
 tap.test('server', test => {
   fs.mkdtemp('/tmp/', _ => {
-    let server, curl
+    let server
     const serverPort = 8080
     const keyPair = generateKeyPair()
     runSeries([
@@ -33,20 +35,17 @@ tap.test('server', test => {
       }
     ], error => {
       test.ifError(error, 'no error')
-      curl = spawn('curl', ['http://localhost:' + serverPort])
-      const chunks = []
-      curl.stdout
-        .on('data', chunk => { chunks.push(chunk) })
-        .once('end', () => {
-          const output = Buffer.concat(chunks).toString()
+      http.get('http://localhost:' + serverPort, (response) => {
+        simpleConcat(response, (error, buffer) => {
+          test.ifError(error, 'no concat error')
           test.assert(
-            output.includes('<h1>Proseline</h1>'),
+            buffer.toString().includes('<h1>Proseline</h1>'),
             'output includes <h1>Proseline</h1>'
           )
           server.kill(9)
-          curl.kill(9)
           test.end()
         })
+      })
     })
   })
 })

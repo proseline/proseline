@@ -1,52 +1,27 @@
 import events from '../test-events.js'
-import timeout from './timeout.js'
 
 export default async ({
-  browser,
+  page,
   port,
   test,
   name = 'Joe Customer',
   zip = '12345'
 }) => {
   // Navigate to checkout page.
-  await browser.navigateTo('http://localhost:' + port)
-  const subscribe = await browser.$('#subscribe')
-  await subscribe.click()
+  await page.goto('http://localhost:' + port)
+  await page.click('#subscribe')
 
   // Enter payment details.
-  const cardNumber = await browser.$('#cardNumber')
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-  await timeout(200)
-  await cardNumber.addValue('42')
-
-  const expiry = await browser.$('#cardExpiry')
-  await expiry.setValue('10 / 31')
-
-  const cvc = await browser.$('#cardCvc')
-  await cvc.setValue('123')
+  await page.fill('#cardNumber', '4242424242424242')
+  await page.fill('#cardExpiry', '10 / 31')
+  await page.fill('#cardCvc', '123')
 
   // Enter customer details.
-  const nameInput = await browser.$('#billingName')
-  await nameInput.setValue(name)
-
-  const zipInput = await browser.$('#billingPostalCode')
-  await zipInput.setValue(zip)
+  await page.fill('#billingName', name)
+  await page.fill('#billingPostalCode', zip)
 
   // Submit the order.
-  const submit = await browser.$('button[type=submit]')
-  await submit.click()
+  await page.click('button[type=submit]')
 
   await Promise.all([
     // Wait for web app to process webhook.
@@ -55,10 +30,8 @@ export default async ({
     }),
     (async () => {
       // Confirm
-      const message = await browser.$('.message')
-      await message.waitForExist({ timeout: 20000 })
-      const messageText = await message.getText()
-      test.assert(messageText.includes('Thank you'), 'subscribed')
+      const message = await page.textContent('.message')
+      test.assert(message.includes('Thank you'), 'subscribed')
     })()
   ])
 }

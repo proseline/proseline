@@ -1,22 +1,20 @@
-import addValue from './add-value.js'
 import assert from 'assert'
-import click from './click.js'
 import events from '../test-events.js'
 import timeout from './timeout.js'
 
-export default async ({ browser, port, handle, password, email }) => {
-  assert(browser)
+export default async ({ page, port, handle, password, email }) => {
+  assert(page)
   assert(Number.isSafeInteger(port))
   assert(typeof handle === 'string')
   assert(typeof password === 'string')
   assert(typeof email === 'string')
-  await browser.navigateTo('http://localhost:' + port)
-  await click(browser, 'a=Sign Up')
+  await page.goto('http://localhost:' + port)
+  await page.click('text="Sign Up"')
   const signupForm = '#signupForm'
-  await addValue(browser, `${signupForm} input[name="email"]`, email)
-  await addValue(browser, `${signupForm} input[name="handle"]`, handle)
-  await addValue(browser, `${signupForm} input[name="password"]`, password)
-  await addValue(browser, `${signupForm} input[name="repeat"]`, password)
+  await page.fill(`${signupForm} input[name="email"]`, email)
+  await page.fill(`${signupForm} input[name="handle"]`, handle)
+  await page.fill(`${signupForm} input[name="password"]`, password)
+  await page.fill(`${signupForm} input[name="repeat"]`, password)
   let confirmURL
   await Promise.all([
     new Promise((resolve, reject) => {
@@ -25,11 +23,8 @@ export default async ({ browser, port, handle, password, email }) => {
         resolve()
       })
     }),
-    (async () => {
-      const submitButton = await browser.$(`${signupForm} button[type="submit"]`)
-      await submitButton.click()
-    })()
+    page.click(`${signupForm} button[type="submit"]`)
   ])
-  await browser.navigateTo(confirmURL)
+  await page.goto(confirmURL)
   await timeout(1000)
 }

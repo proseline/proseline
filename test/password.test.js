@@ -4,26 +4,22 @@ import logout from './logout.js'
 import signup from './signup.js'
 import verifyLogIn from './verify-login.js'
 
-interactive('change password', async ({ browser, port, test }) => {
+interactive('change password', async ({ page, port, test }) => {
   const handle = 'tester'
   const oldPassword = 'old password'
   const newPassword = 'new password'
   const email = 'tester@example.com'
   // Sign up with old password.
-  await signup({ browser, port, handle, password: oldPassword, email })
+  await signup({ page, port, handle, password: oldPassword, email })
   // Log in with old password.
   await login({ handle, password: oldPassword })
   // Navigate to password-change form.
-  const change = await browser.$('a=Change Password')
-  await change.click()
+  await page.click('text="Change Password"')
   // Submit password-change form.
   const passwordForm = '#passwordForm'
-  const changeOldInput = await browser.$(`${passwordForm} input[name="old"]`)
-  await changeOldInput.addValue(oldPassword)
-  const changePasswordInput = await browser.$(`${passwordForm} input[name="password"]`)
-  await changePasswordInput.addValue(newPassword)
-  const changeRepeat = await browser.$(`${passwordForm} input[name="repeat"]`)
-  await changeRepeat.addValue(newPassword)
+  await page.fill(`${passwordForm} input[name="old"]`, oldPassword)
+  await page.fill(`${passwordForm} input[name="password"]`, newPassword)
+  await page.fill(`${passwordForm} input[name="repeat"]`, newPassword)
   await Promise.all([
     new Promise((resolve, reject) => {
       events.once('sent', ({ to, subject }) => {
@@ -32,30 +28,22 @@ interactive('change password', async ({ browser, port, test }) => {
         resolve()
       })
     }),
-    (async () => {
-      const changeSubmitButton = await browser.$(`${passwordForm} button[type="submit"]`)
-      await changeSubmitButton.click()
-    })()
+    page.click(`${passwordForm} button[type="submit"]`)
   ])
-  const message = await browser.$('p.message')
-  const text = await message.getText()
+  const text = await page.textContent('p.message')
   test.assert(text.includes('changed'), 'changed')
   // Log out.
-  await logout({ browser, port })
+  await logout({ page, port })
   // Log in with new password.
   await login({ handle, password: newPassword })
-  await verifyLogIn({ browser, test, port, handle, email })
+  await verifyLogIn({ page, test, port, handle, email })
 
   async function login ({ handle, password }) {
-    await browser.navigateTo('http://localhost:' + port)
-    const login = await browser.$('#login')
-    await login.click()
+    await page.goto('http://localhost:' + port)
+    await page.click('#login')
     const loginForm = '#loginForm'
-    const handleInput = await browser.$(`${loginForm} input[name="handle"]`)
-    await handleInput.addValue(handle)
-    const passwordInput = await browser.$(`${loginForm} input[name="password"]`)
-    await passwordInput.addValue(password)
-    const submitButton = await browser.$(`${loginForm} button[type="submit"]`)
-    await submitButton.click()
+    await page.fill(`${loginForm} input[name="handle"]`, handle)
+    await page.fill(`${loginForm} input[name="password"]`, password)
+    await page.click(`${loginForm} button[type="submit"]`)
   }
 })

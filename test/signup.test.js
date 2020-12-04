@@ -21,31 +21,24 @@ tap.test('GET ' + path, test => {
   })
 })
 
-interactive('browse ' + path, async ({ browser, port, test }) => {
-  await browser.navigateTo('http://localhost:' + port)
-  const signUp = await browser.$('a=Sign Up')
-  await signUp.click()
-  const h2 = await browser.$('h2')
-  const text = await h2.getText()
+interactive('browse ' + path, async ({ page, port, test }) => {
+  await page.goto('http://localhost:' + port)
+  await page.click('text="Sign Up"')
+  const text = await page.textContent('h2')
   test.equal(text, 'Sign Up', '<h2>Sign Up</h2>')
 })
 
-interactive('sign up', async ({ browser, port, test }) => {
+interactive('sign up', async ({ page, port, test }) => {
   const email = 'test@example.com'
   const handle = 'tester'
   const password = 'test password'
-  await browser.navigateTo('http://localhost:' + port)
-  const signUp = await browser.$('a=Sign Up')
-  await signUp.click()
+  await page.goto('http://localhost:' + port)
+  await page.click('text="Sign Up"')
   const signupForm = '#signupForm'
-  const eMailInput = await browser.$(`${signupForm} input[name="email"]`)
-  await eMailInput.addValue(email)
-  const handleInput = await browser.$(`${signupForm} input[name="handle"]`)
-  await handleInput.addValue(handle)
-  const passwordInput = await browser.$(`${signupForm} input[name="password"]`)
-  await passwordInput.addValue(password)
-  const repeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
-  await repeatInput.addValue(password)
+  await page.fill(`${signupForm} input[name="email"]`, email)
+  await page.fill(`${signupForm} input[name="handle"]`, handle)
+  await page.fill(`${signupForm} input[name="password"]`, password)
+  await page.fill(`${signupForm} input[name="repeat"]`, password)
   let url
   await Promise.all([
     new Promise((resolve, reject) => {
@@ -58,85 +51,67 @@ interactive('sign up', async ({ browser, port, test }) => {
       })
     }),
     (async () => {
-      const submitButton = await browser.$('#signupForm button[type="submit"]')
-      await submitButton.click()
+      await page.click(`${signupForm} button[type="submit"]`)
     })()
   ])
-  await browser.navigateTo(url)
-  await login({ browser, port, handle, password })
-  await verifyLogIn({ browser, port, test, handle, email })
+  await page.goto(url)
+  await login({ page, port, handle, password })
+  await verifyLogIn({ page, port, test, handle, email })
 })
 
-interactive('sign up same handle', async ({ browser, port, test }) => {
+interactive('sign up same handle', async ({ page, port, test }) => {
   const firstEMail = 'first@example.com'
   const secondEMail = 'first@example.com'
   const handle = 'tester'
   const password = 'test password'
 
   // Sign up using the handle.
-  await signup({ browser, port, handle, password, email: firstEMail })
+  await signup({ page, port, handle, password, email: firstEMail })
 
   // Try to sign up again with the same handle.
-  const signUp = await browser.$('a=Sign Up')
-  await signUp.click()
+  await page.click('text="Sign Up"')
   const signupForm = '#signupForm'
-  const eMailInput = await browser.$(`${signupForm} input[name="email"]`)
-  await eMailInput.addValue(secondEMail)
-  const handleInput = await browser.$(`${signupForm} input[name="handle"]`)
-  await handleInput.addValue(handle)
-  const passwordInput = await browser.$(`${signupForm} input[name="password"]`)
-  await passwordInput.addValue(password)
-  const repeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
-  await repeatInput.addValue(password)
-  const submitButton = await browser.$(`${signupForm} button[type="submit"]`)
-  await submitButton.click()
-  test.assert(true, 'signed up again with same handle')
+  await page.fill(`${signupForm} input[name="email"]`, secondEMail)
+  await page.fill(`${signupForm} input[name="handle"]`, handle)
+  await page.fill(`${signupForm} input[name="password"]`, password)
+  await page.fill(`${signupForm} input[name="repeat"]`, password)
+  await page.click(`${signupForm} button[type="submit"]`)
+  test.pass('signed up again with same handle')
 
   // Check for error.
-  const error = await browser.$('.error')
-  const text = await error.getText()
-  test.assert(text.includes('taken'), 'handle taken')
+  const errorText = await page.textContent('.error')
+  test.assert(errorText.includes('taken'), 'handle taken')
 
   // Check that other form inputs remain filled.
-  const newEMailInput = await browser.$(`${signupForm} input[name="email"]`)
-  const eMailValue = await newEMailInput.getValue()
+  const eMailValue = await page.getAttribute(`${signupForm} input[name="email"]`, 'value')
   test.equal(eMailValue, secondEMail, 'preserves e-mail value')
-  const newHandleInput = await browser.$(`${signupForm} input[name="handle"]`)
-  const handleValue = await newHandleInput.getValue()
+  const handleValue = await page.getAttribute(`${signupForm} input[name="handle"]`, 'value')
   test.equal(handleValue, handle, 'preserves handle value')
-  const newPasswordInput = await browser.$(`${signupForm} input[name="password"]`)
-  const passwordValue = await newPasswordInput.getValue()
-  test.equal(passwordValue, '', 'empties password')
-  const newRepeatInput = await browser.$(`${signupForm} input[name="repeat"]`)
-  const repeatValue = await newRepeatInput.getValue()
-  test.equal(repeatValue, '', 'empties password repeat')
+  const passwordValue = await page.getAttribute(`${signupForm} input[name="password"]`, 'value')
+  test.equal(passwordValue, null, 'empties password')
+  const repeatValue = await page.getAttribute(`${signupForm} input[name="repeat"]`, 'value')
+  test.equal(repeatValue, null, 'empties password repeat')
 })
 
-interactive('sign up same email', async ({ browser, port, test }) => {
+interactive('sign up same email', async ({ page, port, test }) => {
   const email = 'first@example.com'
   const firstHandle = 'first'
   const secondHandle = 'second'
   const password = 'test password'
 
-  await signup({ browser, port, handle: firstHandle, password, email })
+  await signup({ page, port, handle: firstHandle, password, email })
 
   // Try to sign up again with the same e-mail.
-  await browser.navigateTo('http://localhost:' + port)
-  const signUp = await browser.$('a=Sign Up')
-  await signUp.click()
-  const eMailInput = await browser.$('#signupForm input[name="email"]')
-  await eMailInput.addValue(email)
-  const handleInput = await browser.$('#signupForm input[name="handle"]')
-  await handleInput.addValue(secondHandle)
-  const passwordInput = await browser.$('#signupForm input[name="password"]')
-  await passwordInput.addValue(password)
-  const repeatInput = await browser.$('#signupForm input[name="repeat"]')
-  await repeatInput.addValue(password)
-  const submitButton = await browser.$('#signupForm button[type="submit"]')
-  await submitButton.click()
+  await page.goto('http://localhost:' + port)
+  await page.click('text="Sign Up"')
+  const signupForm = '#signupForm'
+  await page.fill(`${signupForm} input[name="email"]`, email)
+  await page.fill(`${signupForm} input[name="handle"]`, secondHandle)
+  await page.fill(`${signupForm} input[name="password"]`, password)
+  await page.fill(`${signupForm} input[name="repeat"]`, password)
+  await page.click(`${signupForm} button[type="submit"]`)
 
   // Check for error.
-  const error = await browser.$('.error')
-  const text = await error.getText()
-  test.assert(text.includes('e-mail'), 'e-mail')
+  const errorText = await page.textContent('.error')
+  test.assert(errorText.includes('e-mail'), 'e-mail')
 })
