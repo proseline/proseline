@@ -10,7 +10,7 @@ export default (label, logic) => {
         let browser
         try {
           browser = await playwright.chromium.launch({
-            headless: !process.env.HEADED
+            headless: !process.env.HEADFUL
           })
           const context = await browser.newContext()
           const page = await context.newPage()
