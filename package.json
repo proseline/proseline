@@ -45,6 +45,7 @@
     "tap": "^14.11.0"
   },
   "tap": {
+    "jobs": 1,
     "no-comments": true,
     "no-esm": true,
     "no-timeout": true,
