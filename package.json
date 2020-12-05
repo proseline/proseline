@@ -54,7 +54,7 @@
   "scripts": {
     "precommit": "npm run lint",
     "coverage": "nyc --reporter=lcov --reporter=text npm run test",
-    "deps": "depcheck",
+    "deps": "depcheck --ignore pino-papertrail",
     "fix": "standard --fix",
     "licenses": "licensee --errors-only",
     "lint": "standard",
