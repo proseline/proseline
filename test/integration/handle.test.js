@@ -1,4 +1,4 @@
-import events from '../test-events.js'
+import events from '../../test-events.js'
 import http from 'http'
 import interactive from './interactive.js'
 import server from './server.js'

@@ -1,5 +1,5 @@
 import assert from 'assert'
-import events from '../test-events.js'
+import events from '../../test-events.js'
 import timeout from './timeout.js'
 
 export default async ({ page, port, handle, password, email }) => {

@@ -1,7 +1,7 @@
-import * as crypto from '../crypto.js'
+import * as crypto from '../../crypto.js'
 import runSeries from 'run-series'
-import * as s3 from '../s3.js'
-import * as storage from '../storage.js'
+import * as s3 from '../../s3.js'
+import * as storage from '../../storage.js'
 import tap from 'tap'
 
 const encryptionKey = crypto.generateEncryptionKey()

@@ -1,6 +1,6 @@
 import AJV from 'ajv'
-import { generateDistributionKey, generateDiscoveryKey } from '../crypto.js'
-import * as schemas from '../schemas.js'
+import { generateDistributionKey, generateDiscoveryKey } from '../../crypto.js'
+import * as schemas from '../../schemas.js'
 import tap from 'tap'
 
 Object.keys(schemas).forEach(id => {

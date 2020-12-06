@@ -1,5 +1,5 @@
 import fs from 'fs'
-import handle from '../index.js'
+import handle from '../../index.js'
 import http from 'http'
 import pino from 'pino'
 import pinoHTTP from 'pino-http'

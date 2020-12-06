@@ -1,4 +1,4 @@
-import { group, locate } from '../rollups.js'
+import { group, locate } from '../../rollups.js'
 import tap from 'tap'
 
 tap.test('rollup: location', test => {

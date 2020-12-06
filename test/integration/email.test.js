@@ -1,4 +1,4 @@
-import events from '../test-events.js'
+import events from '../../test-events.js'
 import login from './login.js'
 import signup from './signup.js'
 import verifyLogIn from './verify-login.js'

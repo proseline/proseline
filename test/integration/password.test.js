@@ -1,4 +1,4 @@
-import events from '../test-events.js'
+import events from '../../test-events.js'
 import interactive from './interactive.js'
 import logout from './logout.js'
 import signup from './signup.js'

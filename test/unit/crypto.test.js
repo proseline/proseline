@@ -1,5 +1,5 @@
 import AJV from 'ajv'
-import * as schemas from '../schemas.js'
+import * as schemas from '../../schemas.js'
 import tap from 'tap'
 import {
   decryptBinary,
@@ -26,7 +26,7 @@ import {
   signJSON,
   verifyEnvelope,
   verifyJSON
-} from '../crypto.js'
+} from '../../crypto.js'
 
 const ajv = new AJV()
 

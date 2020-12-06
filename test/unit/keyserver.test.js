@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import has from 'has'
-import protocol from '../keyserver.js'
+import protocol from '../../keyserver.js'
 import tap from 'tap'
 
 tap.test('keyserver protocol', test => {

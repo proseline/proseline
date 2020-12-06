@@ -1,4 +1,4 @@
-import events from '../test-events.js'
+import events from '../../test-events.js'
 
 export default async ({
   page,

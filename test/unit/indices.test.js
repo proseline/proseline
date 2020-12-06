@@ -1,5 +1,5 @@
 import tap from 'tap'
-import * as indices from '../indices.js'
+import * as indices from '../../indices.js'
 
 tap.test('indices', test => {
   test.equal(indices.parse(indices.stringify(100)), 100)
