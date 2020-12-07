@@ -20,7 +20,7 @@ if (process.env.NODE_ENV === 'production') {
 
 export default (options, callback) => {
   // In production, send mail via SMTP.
-  if (process.env.NODE_ENV === 'production') {
+  if (transport) {
     options.from = process.env.SMTP_USER
     transport.sendMail(options, callback)
   // In testing, mock e-mail, exposing an Event Emitter that
