@@ -22,6 +22,7 @@
     "lock": "^1.1.0",
     "lru-cache": "^6.0.0",
     "nodemailer": "^6.4.16",
+    "npm-run-all": "^4.1.5",
     "pino": "^6.7.0",
     "pino-http": "^5.3.0",
     "pino-papertrail": "^2.1.0",
@@ -65,8 +66,8 @@
   },
   "scripts": {
     "precommit": "npm run lint",
-    "build": "npm run build:client && npm run build:credits",
-    "build:client": "rollup -c",
+    "build": "npm-run-all -p build:*",
+    "build:client": "rollup -c --silent",
     "build:credits": "creditstxt > credits.txt",
     "coverage": "nyc --reporter=lcov --reporter=text npm run test",
     "deps": "depcheck --ignore pino-papertrail",
