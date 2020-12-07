@@ -1,12 +1,12 @@
 // Send e-mail.
 
 import emitter from './test-events.js'
+import nodemailer from 'nodemailer'
 
-let nodemailer, transport
+let transport
 
 /* istanbul ignore if */
 if (process.env.NODE_ENV === 'production') {
-  nodemailer = require('nodemailer')
   transport = nodemailer.createTransport({
     pool: true,
     host: process.env.SMTP_HOST || 'localhost',
