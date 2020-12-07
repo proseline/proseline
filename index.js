@@ -1860,6 +1860,14 @@ route('/public-key', (request, response) => {
   response.end(process.env.PUBLIC_KEY)
 })
 
+route('/editor.min.js', (request, response) => {
+  send(request, path.join('client', 'editor.min.js')).pipe(response)
+})
+
+route('/editor.min.js.map', (request, response) => {
+  send(request, path.join('client', 'editor.min.js.map')).pipe(response)
+})
+
 if (!inProduction) {
   route('/internal-error', (request, response) => {
     const testError = new Error('test error')

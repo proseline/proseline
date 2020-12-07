@@ -39,6 +39,18 @@ simple({
 })
 
 simple({
+  path: '/editor.min.js',
+  status: 200,
+  mime: 'application/javascript; charset=UTF-8'
+})
+
+simple({
+  path: '/editor.min.js.map',
+  status: 200,
+  mime: 'application/json; charset=UTF-8'
+})
+
+simple({
   path: '/nonexistent',
   status: 404,
   mime: 'text/html',
