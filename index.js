@@ -1855,6 +1855,10 @@ route('/robots.txt', (request, response) => {
   return response.end('User-agent: *\nDisallow: /')
 })
 
+route('/credits.txt', (request, response) => {
+  send(request, 'credits.txt').pipe(response)
+})
+
 route('/public-key', (request, response) => {
   response.setHeader('Content-Type', 'application/octet-stream')
   response.end(process.env.PUBLIC_KEY)

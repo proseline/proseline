@@ -82,6 +82,14 @@ simple({
 
 simple({
   method: 'GET',
+  path: '/credits.txt',
+  status: 200,
+  mime: 'text/plain; charset=UTF-8',
+  content: 'Kyle E. Mitchell'
+})
+
+simple({
+  method: 'GET',
   path: '/public-key',
   status: 200,
   mime: 'application/octet-stream'
