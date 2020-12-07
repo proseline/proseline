@@ -13,7 +13,7 @@ git fetch origin
 git reset --hard origin/master
 new_hash="$(shasum package-lock.json)"
 if [ "$old_hash" != "$new_hash" ]; then
-  npm ci
+  npm ci --production
 fi
 systemctl --user restart proseline
 SCRIPT
