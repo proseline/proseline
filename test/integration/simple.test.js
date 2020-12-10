@@ -51,6 +51,18 @@ simple({
 })
 
 simple({
+  path: '/editor.css',
+  status: 200,
+  mime: 'text/css; charset=UTF-8'
+})
+
+simple({
+  path: '/prosemirror.css',
+  status: 200,
+  mime: 'text/css; charset=UTF-8'
+})
+
+simple({
   path: '/nonexistent',
   status: 404,
   mime: 'text/html',

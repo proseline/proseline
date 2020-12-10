@@ -1,17 +1,17 @@
 import { schema } from 'prosemirror-markdown'
 import { EditorState } from 'prosemirror-state'
-import { undo, redo, history } from 'prosemirror-history'
-import { keymap } from 'prosemirror-keymap'
 import { EditorView } from 'prosemirror-view'
+import { exampleSetup } from 'prosemirror-example-setup'
 
-let state, editor
 document.addEventListener('DOMContentLoaded', () => {
-  state = EditorState.create({
+  const state = window.state = EditorState.create({
     schema,
-    plugins: [
-      history(),
-      keymap({ 'Mod-z': undo, 'Mod-y': redo })
-    ]
+    plugins: exampleSetup({ schema })
   })
-  editor = new EditorView(document.body, { state })
+  window.editor = new EditorView(document.body, {
+    autofocus: true,
+    spellcheck: true,
+    lineWrapping: true,
+    state
+  })
 })

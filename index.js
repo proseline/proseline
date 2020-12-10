@@ -254,6 +254,14 @@ route('/styles.css', (request, response) => {
   send(request, 'styles.css').pipe(response)
 })
 
+route('/prosemirror.css', (request, response) => {
+  send(request, 'prosemirror.css').pipe(response)
+})
+
+route('/editor.css', (request, response) => {
+  send(request, 'editor.css').pipe(response)
+})
+
 route('/logo.svg', (request, response) => {
   send(request, 'logo.svg').pipe(response)
 })
