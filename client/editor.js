@@ -53,7 +53,7 @@ class StylingPopup {
         command: setBlockType(schema.nodes.heading, { level }),
         dom: (() => {
           const element = document.createElement('button')
-          element.textContent = `H${level}`
+          element.textContent = `§${level}`
           return element
         })()
       }
