@@ -95,13 +95,19 @@ class StylingPopup {
     }
 
     element.style.display = ''
-    const { from, to } = state.selection
-    const screenStart = view.coordsAtPos(from)
-    const screenEnd = view.coordsAtPos(to)
+    const { from, to, head } = state.selection
+    const forwards = head === to
+    const fromCoordinates = view.coordsAtPos(from)
+    const toCoordinates = view.coordsAtPos(to)
+    const left = forwards
+      ? toCoordinates.left
+      : fromCoordinates.left
     const box = element.offsetParent.getBoundingClientRect()
-    const left = Math.max((screenStart.left + screenEnd.left) / 2, screenStart.left + 3)
-    element.style.left = (left - box.left) + 'px'
-    element.style.bottom = (box.bottom - screenStart.top) + 'px'
+    const bottom = forwards
+      ? (box.bottom - toCoordinates.top)
+      : (box.bottom - fromCoordinates.top)
+    element.style.left = left + 'px'
+    element.style.bottom = bottom + 'px'
   }
 
   destroy () {
