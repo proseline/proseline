@@ -68,7 +68,7 @@
   "scripts": {
     "precommit": "npm run lint",
     "build": "npm-run-all -p build:*",
-    "build:client": "rollup -c --silent",
+    "build:editor": "rollup -c --silent",
     "build:credits": "creditstxt > credits.txt",
     "coverage": "nyc --reporter=lcov --reporter=text npm run test",
     "deps": "depcheck --ignore pino-papertrail",
