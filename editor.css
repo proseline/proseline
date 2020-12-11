@@ -6,6 +6,19 @@ html, body {
 }
 
 .ProseMirror {
+  box-sizing: border-box;
   height: 100vh;
   margin: 0;
+  padding: 2rem;
+}
+
+.popup {
+  background: white;
+  border: 1px solid black;
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.popup button {
+  margin: 0.25rem;
 }
