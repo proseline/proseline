@@ -48,7 +48,7 @@
     "sodium-universal": "^3.0.3",
     "stripe": "^8.128.0",
     "url-parse": "^1.4.7",
-    "uuid": "^8.3.1",
+    "uuid": "^8.3.2",
     "zero-fill": "^2.2.4"
   },
   "devDependencies": {
