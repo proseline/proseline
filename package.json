@@ -8,7 +8,7 @@
     "@rollup/plugin-commonjs": "^17.0.0",
     "@rollup/plugin-json": "^4.1.0",
     "@rollup/plugin-node-resolve": "^11.0.1",
-    "ajv": "^6.12.6",
+    "ajv": "^7.0.2",
     "aws-sdk": "^2.809.0",
     "busboy": "^0.3.1",
     "commonmark": "^0.29.3",
