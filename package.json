@@ -46,7 +46,7 @@
     "send": "^0.17.1",
     "simple-concat-limit": "^2.0.3",
     "sodium-universal": "^3.0.3",
-    "stripe": "^8.128.0",
+    "stripe": "^8.129.0",
     "url-parse": "^1.4.7",
     "uuid": "^8.3.2",
     "zero-fill": "^2.2.4"
