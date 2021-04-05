@@ -59,12 +59,11 @@
     "playwright": "^1.10.0",
     "simple-concat": "^1.0.1",
     "standard": "^16.0.3",
-    "tap": "^14.11.0"
+    "tap": "^15.0.1"
   },
   "tap": {
     "jobs": 1,
     "no-comments": true,
-    "no-esm": true,
     "no-timeout": true,
     "reporter": "tap"
   },
