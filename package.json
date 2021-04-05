@@ -39,7 +39,7 @@
     "rollup": "^2.44.0",
     "rollup-plugin-terser": "^7.0.2",
     "run-auto": "^2.0.4",
-    "run-parallel": "^1.1.10",
+    "run-parallel": "^1.2.0",
     "run-parallel-limit": "^1.0.6",
     "run-series": "^1.1.9",
     "secure-password": "^4.0.0",
