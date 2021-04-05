@@ -1,6 +1,7 @@
 // JSON Schemas and validation functions
 
 import AJV from 'ajv'
+import addFormats from 'ajv-formats'
 import assert from 'assert'
 import {
   digestBytes,
@@ -140,9 +141,9 @@ export const mark = {
 // Notes work like comments in word processors.
 export const note = {
   type: 'object',
-  version: { const: '1.0.0-pre' },
   properties: {
     type: { const: 'note' },
+    version: { const: '1.0.0-pre' },
     draft: digest,
     range: {
       type: 'object',
@@ -170,9 +171,9 @@ export const note = {
 // Replies associate text with notes.
 export const reply = {
   type: 'object',
-  version: { const: '1.0.0-pre' },
   properties: {
     type: { const: 'reply' },
+    version: { const: '1.0.0-pre' },
     draft: digest,
     parent: digest,
     text,
@@ -283,6 +284,7 @@ export const invitation = {
 // Export Validation Functions
 export const validate = {}
 const ajv = new AJV()
+addFormats(ajv)
 const schemas = {
   intro,
   draft,
