@@ -1,4 +1,5 @@
 import AJV from 'ajv'
+import addFormats from 'ajv-formats'
 import * as schemas from '../../schemas.js'
 import tap from 'tap'
 import {
@@ -29,6 +30,7 @@ import {
 } from '../../crypto.js'
 
 const ajv = new AJV()
+addFormats(ajv)
 
 tap.test('encryption round trip', function (test) {
   const plaintext = 'plaintext message'

@@ -1,4 +1,5 @@
 import AJV from 'ajv'
+import addFormats from 'ajv-formats'
 import { generateDistributionKey, generateDiscoveryKey } from '../../crypto.js'
 import * as schemas from '../../schemas.js'
 import tap from 'tap'
@@ -6,6 +7,7 @@ import tap from 'tap'
 Object.keys(schemas).forEach(id => {
   tap.test(id, test => {
     const ajv = new AJV()
+    addFormats(ajv)
     ajv.validateSchema(schemas[id])
     test.deepEqual(ajv.errors, null, 'valid schema')
     test.end()
