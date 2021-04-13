@@ -59,7 +59,7 @@
     "playwright": "^1.10.0",
     "simple-concat": "^1.0.1",
     "standard": "^16.0.3",
-    "tap": "^15.0.1"
+    "tap": "^15.0.2"
   },
   "tap": {
     "jobs": 1,
